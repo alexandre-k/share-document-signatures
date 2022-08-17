@@ -1,13 +1,13 @@
 import mongoose from 'mongoose';
 
-DB_USER = process.env["MONGODB_USER"];
-DB_PASSWORD = process.env["MONGODB_PASSWORD"];
-DB_HOST = process.env["MONGODB_HOST"];
-DB_PORT = process.env["MONGODB_PORT"];
+const DB_USERNAME = process.env["MONGODB_USERNAME"];
+const DB_PASSWORD = process.env["MONGODB_PASSWORD"];
+const DB_HOST = process.env["MONGODB_HOST"];
+const DB_PORT = process.env["MONGODB_PORT"];
 
 const connectDb = async () => mongoose
     .connect(`mongodb://${DB_HOST}:${DB_PORT}/`, {
-        user: DB_USER,
+        user: DB_USERNAME,
         pass: DB_PASSWORD,
     })
     .then((db) => {

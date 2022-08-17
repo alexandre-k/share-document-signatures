@@ -1,14 +1,14 @@
 import { Schema, model, models } from 'mongoose';
 
 const userSchema = new Schema({
-    id: String;
-    username: String;
-    pubKey: String,
-    currentChallenge: {
+    id: {
         type: String,
         required: true,
         unique: true,
     },
+    username: String,
+    pubKey: String,
+    currentChallenge: String
 });
 
 const User = models.User || model('User', userSchema);

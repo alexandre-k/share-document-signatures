@@ -1,7 +1,9 @@
+version: "3.3"
 services:
   app:
     domainname: hellosign.local
     build:
+      context: .
       dockerfile: './Dockerfile'
     volumes:
       - /usr/src/app/node_modules
