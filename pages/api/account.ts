@@ -13,7 +13,7 @@ export default async function handler(
     res: NextApiResponse<Account>
 ) {
     const api = new HelloSignSDK.AccountApi();
-    api.username = process.env.API_KEY;
+    api.username = process.env.HELLOSIGN_API_KEY;
 
     const response = await api.accountGet();
     const { accountId, emailAddress } = response.body.account;
