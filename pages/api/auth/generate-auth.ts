@@ -1,22 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-
-import connectDb from "../../../db/connectDatabase";
 import User from "../../../db/user";
 import { v4 as uuidv4 } from 'uuid';
 import {
-    PublicKeyCredentialCreationOptionsJSON,
-    GenerateRegistrationOptionsOpts,
-    generateRegistrationOptions,
-    verifyRegistrationResponse,
+    generateAuthenticationOptions,
 } from '@simplewebauthn/server';
 
 
 export default async function handler(
     req: NextApiRequest,
-    res: NextApiResponse<PublicKeyCredentialCreationOptionsJSON>
+    res: NextApiResponse<AuthenticationCredential>
 ) {
-        const db = await connectDb();
-        console.log('Connect db > ', db)
+
     const testUserId = "08ec7dee-ba64-41f8-acaf-bcff4577ac44";
     let user: User;
     if (testUserId) {
@@ -37,21 +31,13 @@ export default async function handler(
     // The URL at which registrations and authentications should occur
     const origin = window.location.origin;
 
-    const options = generateRegistrationOptions({
-        rpName,
-        rpID,
-        userID: user.id,
-        userName: 'alex',
-        // Don't prompt users for additional information about the authenticator
-        // (Recommended for smoother UX)
-        attestationType: 'indirect',
-        // Prevent users from re-registering existing authenticators
-        /* excludeCredentials: userAuthenticators.map(authenticator => ({
-         *     id: authenticator.credentialID,
-         *     type: 'public-key',
-         *     // Optional
-         *     transports: authenticator.transports,
-         * })), */
+    const options = generateAuthenticationOptions({
+        allowCredentials: {
+            id: user.credentialID,
+            type: 'public-key',
+            // transports: authenticator.transports
+        },
+        userVerification: 'preferred'
     });
     await User.updateOne(
         { id: testUserId },

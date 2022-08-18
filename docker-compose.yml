@@ -13,6 +13,7 @@ services:
       - 3000:3000
     environment:
       - PORT=3000
+      - PRIVATE_KEY=$PRIVATE_KEY
       - MONGODB_HOST=$MONGODB_HOST
       - MONGODB_USERNAME=$MONGODB_USERNAME
       - MONGODB_PASSWORD=$MONGODB_PASSWORD
@@ -34,6 +35,14 @@ services:
       - MONGO_INITDB_DATABASE=$MONGODB_DATABASE
       - MONGO_INITDB_ROOT_USERNAME=$MONGODB_USERNAME
       - MONGO_INITDB_ROOT_PASSWORD=$MONGODB_PASSWORD
+    networks:
+      - hellosign
+  nginx:
+    build:
+      context: ./infra
+      dockerfile: ./Dockerfile
+    ports:
+      - 80:80
     networks:
       - hellosign
 volumes:

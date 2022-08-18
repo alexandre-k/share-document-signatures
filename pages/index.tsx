@@ -1,13 +1,12 @@
+import { useState } from 'react'
+import { Loading, Grid } from "@nextui-org/react";
 import type { NextPage } from 'next'
 import { Button } from '@nextui-org/react';
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
-// import { Fido2Lib } from "fido2-lib";
-import SimpleWebAuthnBrowser from '@simplewebauthn/browser';
-import { startRegistration } from '@simplewebauthn/browser';
-import { startAuthentication } from '@simplewebauthn/browser';
-
+import { registerUser } from '../services/register';
+import { authenticate } from '../services/login';
 /**
  * It is strongly advised that authenticators get their own DB
  * table, ideally with a foreign key to a specific UserModel.
@@ -55,40 +54,8 @@ interface HomeProps {
 
 const Home: NextPage = (homeProps: HomeProps) => {
     console.log(homeProps)
-    const tryFido = async () => {
-
-        try {
-            const response = await fetch('http://localhost:3000/api/auth/get-registration-options')
-            const { value: optionsBytes } = await response.body.getReader().read()
-            const decoder = new TextDecoder();
-            const options = JSON.parse(decoder.decode(optionsBytes))
-
-            // Pass the options to the authenticator and wait for a response
-            const resp = await startRegistration(options);
-            // @simplewebauthn/server -> verifyRegistrationResponse()
-            const verificationResp = await fetch('http://localhost:3000/api/auth/verify-registration', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(resp),
-            });
-            const { value: verificationBytes } = await verificationResp.body.getReader().read();
-            const stringifiedVerif = Buffer.from(verificationBytes).toString('utf-8');
-            console.log('verification ', JSON.parse(stringifiedVerif))
-            localStorage['verification'] = stringifiedVerif;
-        } catch (error) {
-            // Some basic error handling
-            if (error.name === 'InvalidStateError') {
-                // elemError.innerText = 'Error: Authenticator was probably already registered by user';
-            } else {
-                // elemError.innerText = error;
-            }
-
-            console.log(error)
-            // throw error;
-        }
-    }
+    const [isRegistering, setIsRegistering] = useState<boolean>(false);
+    const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
 
   return (
       <>
@@ -100,10 +67,6 @@ const Home: NextPage = (homeProps: HomeProps) => {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
         <div className={styles.grid}>
             <div>
                 <h2>Signature</h2>
@@ -116,17 +79,36 @@ const Home: NextPage = (homeProps: HomeProps) => {
         <div className={styles.grid}>
             <div>
                 <h2>Register</h2>
-                <Button onPress={() => tryFido()}>register</Button>
+                <Button shadow disabled={isRegistering || isAuthenticating} onPress={async () => {
+                    try {
+                        setIsRegistering(true)
+                        await registerUser()
+                        setIsRegistering(false)
+                    } catch {
+                        setIsRegistering(false)
+                    }}}>
+                    {isRegistering ? <Loading type="points" color="currentColor" size="sm" />:"register"}
+                </Button>
             </div>
         </div>
 
         <div className={styles.grid}>
             <div>
                 <h2>Login</h2>
-                <Button onPress={() => {
-                    const stringifiedVerif = localStorage['verification'];
-                    console.log(JSON.parse(stringifiedVerif))
-                }}>Login</Button>
+                <Button
+                    shadow
+                    disabled={isRegistering || isAuthenticating}
+                    onPress={() =>{
+                        try {
+                            setIsAuthenticating(true)
+                            authenticate()
+                        }
+                        catch {
+                            setIsAuthenticating(false);
+                        }
+                    }}>
+                    {isAuthenticating ? <Loading type="points" color="currentColor" size="sm" />:"Login"}
+                </Button>
             </div>
         </div>
       </main>

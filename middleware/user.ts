@@ -8,7 +8,8 @@ const userSchema = new Schema({
     },
     username: String,
     pubKey: String,
-    currentChallenge: String
+    currentChallenge: String,
+    credentialID: String
 });
 
 const User = models.User || model('User', userSchema);
