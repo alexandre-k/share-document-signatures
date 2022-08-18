@@ -11,7 +11,7 @@ const connectDb = async () => mongoose
         pass: DB_PASSWORD,
     })
     .then((db) => {
-        console.log("Connected to MongoDB.", db);
+        console.log("Connected to MongoDB.");
         return db;
     })
     .catch((err) => console.log("Error while connecting to MongoDB ", err));

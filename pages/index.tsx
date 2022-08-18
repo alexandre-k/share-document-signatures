@@ -1,4 +1,5 @@
 import type { NextPage } from 'next'
+import { Button } from '@nextui-org/react';
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
@@ -60,8 +61,8 @@ const Home: NextPage = (homeProps: HomeProps) => {
             const response = await fetch('http://localhost:3000/api/auth/get-registration-options')
             const { value: optionsBytes } = await response.body.getReader().read()
             const decoder = new TextDecoder();
-
             const options = JSON.parse(decoder.decode(optionsBytes))
+
             // Pass the options to the authenticator and wait for a response
             const resp = await startRegistration(options);
             // @simplewebauthn/server -> verifyRegistrationResponse()
@@ -72,6 +73,10 @@ const Home: NextPage = (homeProps: HomeProps) => {
                 },
                 body: JSON.stringify(resp),
             });
+            const { value: verificationBytes } = await verificationResp.body.getReader().read();
+            const stringifiedVerif = Buffer.from(verificationBytes).toString('utf-8');
+            console.log('verification ', JSON.parse(stringifiedVerif))
+            localStorage['verification'] = stringifiedVerif;
         } catch (error) {
             // Some basic error handling
             if (error.name === 'InvalidStateError') {
@@ -84,12 +89,9 @@ const Home: NextPage = (homeProps: HomeProps) => {
             // throw error;
         }
     }
-    tryFido()
 
   return (
       <>
-      <div>Signature</div>
-      <a href={homeProps.data[0].filesUrl}>{homeProps.data[0].filesUrl}</a>
     <div className={styles.container}>
       <Head>
         <title>Create Next App</title>
@@ -102,39 +104,30 @@ const Home: NextPage = (homeProps: HomeProps) => {
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.tsx</code>
-        </p>
+        <div className={styles.grid}>
+            <div>
+                <h2>Signature</h2>
+                <a href={homeProps.data[0].filesUrl}>
+                    {homeProps.data[0].filesUrl}
+                </a>
+            </div>
+        </div>
 
         <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
+            <div>
+                <h2>Register</h2>
+                <Button onPress={() => tryFido()}>register</Button>
+            </div>
+        </div>
 
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div className={styles.grid}>
+            <div>
+                <h2>Login</h2>
+                <Button onPress={() => {
+                    const stringifiedVerif = localStorage['verification'];
+                    console.log(JSON.parse(stringifiedVerif))
+                }}>Login</Button>
+            </div>
         </div>
       </main>
 
