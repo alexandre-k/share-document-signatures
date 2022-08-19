@@ -1,18 +1,23 @@
 package models
 
 import (
+	"context"
+	// "net/url"
 	// "encoding/base64"
-	"encoding/binary"
+	// "encoding/binary"
 
 	// "go.mongodb.org/mongo-driver/bson"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/google/uuid"
 	"github.com/duo-labs/webauthn/webauthn"
+
+	repositories "github.com/alexandre-k/share-document-signatures/server/repositories"
 )
 
+
 type User struct {
-	id uint32 `bson:"_id,omitempty"`
+	id string `bson:"_id,omitempty"`
 	username string             `bson:"username,omitempty"`
 	displayName string             `bson:"displayName,omitempty"`
 	icon string             `bson:"icon,omitempty"`
@@ -20,10 +25,22 @@ type User struct {
 	currentChallenge string           `bson:"currentChallenge,omitempty"`
 }
 
+
+func AddUser(user User) bool {
+	users := repositories.Repo.GetUsers()
+	_, insertErr := users.InsertOne(context.Background(), user)
+	if insertErr != nil {
+		panic(insertErr)
+		return false
+	}
+	return true
+}
+
 //  WebAuthnCredentials webauthn.Credential
 func NewUser() User {
+	userUuid := uuid.New().String()
 	u := User{
-		id: uuid.New().ID(),
+		id: userUuid,
 		username: "john",
 		displayName: "john",
 		icon: "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
@@ -33,12 +50,12 @@ func NewUser() User {
 	return u
 }
 
+// func GetUser() User {}
+
 
 
 func (u User) WebAuthnID() []byte {
-	buf := make([]byte, binary.MaxVarintLen64)
-	binary.PutUvarint(buf, uint64(u.id))
-	return buf
+	return []byte(u.id)
 }
 
 

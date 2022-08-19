@@ -6,7 +6,7 @@ ENV APP_HOME /go/src/server
 RUN mkdir -p "$APP_HOME"
 WORKDIR "$APP_HOME"
 
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod vendor
 
 COPY . .
