@@ -5,35 +5,25 @@ import { startAuthentication } from '@simplewebauthn/browser';
 
 export const registerUser = async () => {
     try {
-        const response = await fetch('http://localhost/api/register')
-        console.log('RESPONSE > ', response)
+        const response = await fetch('http://localhost/api/fido/register')
         const { value: optionsBytes } = await response.body.getReader().read()
-        console.log('RESPONSE > ', optionsBytes)
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();
         const optionsBody = JSON.parse(decoder.decode(optionsBytes))
         const credentialOptions = optionsBody.options
-        console.log('RESPONSE > ', credentialOptions.publicKey)
         credentialOptions.publicKey.challenge = encoder.encode(credentialOptions.publicKey.challenge)
         credentialOptions.publicKey.user.id = encoder.encode(credentialOptions.publicKey.user.id)
-        console.log('RESPONSE > ', credentialOptions.publicKey)
         const newCredential = await navigator.credentials.create({
             publicKey: { ...credentialOptions.publicKey }
         });
-        console.log("PublicKeyCredential Created");
-        console.log(newCredential);
-        // state.createResponse = newCredential;
         // registerNewCredential(newCredential);
-        // Pass the options to the authenticator and wait for a response
-        // const resp = await startRegistration(optionsBody.options.publicKey);
-        // @simplewebauthn/server -> verifyRegistrationResponse()
-        console.log('RESP > ', resp)
-        const verificationResp = await fetch('http://localhost/api/auth/verify-registration', {
+        console.log('Credential: ', JSON.stringify(newCredential))
+        const verificationResp = await fetch('http://localhost/api/fido/register/verify', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(resp),
+            body: JSON.stringify(newCredential),
         });
         const { value: verificationBytes } = await verificationResp.body.getReader().read();
         const stringifiedVerif = Buffer.from(verificationBytes).toString('utf-8');

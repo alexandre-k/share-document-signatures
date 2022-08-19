@@ -42,5 +42,5 @@ func (r Repository) GetUsers() *mongo.Collection {
 
 
 var Repo = &Repository{
-	Client: ConnectDB(config.MongoDatabase()),
+	Client: ConnectDB(config.MongoURI()),
 }
