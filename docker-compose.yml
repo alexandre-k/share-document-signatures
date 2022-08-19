@@ -1,18 +1,15 @@
 version: "3.3"
 services:
-  app:
-    domainname: hellosign.local
+  server:
+    hostname: auth-server
     build:
-      context: .
-      dockerfile: './Dockerfile'
+      context: ./server
+      dockerfile: ./Dockerfile
     volumes:
-      - /usr/src/app/node_modules
-      - ./:/usr/src/app
-      - /usr/src/app/.next
+      - ./server:/go/src/server
     ports:
-      - 3000:3000
+      - 4000:4000
     environment:
-      - PORT=3000
       - PRIVATE_KEY=$PRIVATE_KEY
       - MONGODB_HOST=$MONGODB_HOST
       - MONGODB_USERNAME=$MONGODB_USERNAME
@@ -23,9 +20,26 @@ services:
       - database
     networks:
       - hellosign
+  app:
+    hostname: hellosign-app
+    build:
+      context: ./app
+      dockerfile: ./Dockerfile
+    volumes:
+      - /usr/src/app/node_modules
+      - ./app:/usr/src/app
+      - /usr/src/app/.next
+    ports:
+      - 3000:3000
+    environment:
+      - PORT=3000
+    depends_on:
+      - server
+      - database
+    networks:
+      - hellosign
   database:
     hostname: hellosign-db
-    domainname: hellosign-db.local
     image: mongo
     volumes:
       - database:/data/db
@@ -40,7 +54,7 @@ services:
   nginx:
     build:
       context: ./infra
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.nginx
     ports:
       - 80:80
     networks:
