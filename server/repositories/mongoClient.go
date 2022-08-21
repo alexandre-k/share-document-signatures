@@ -6,6 +6,7 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson"
 
 	config "github.com/alexandre-k/share-document-signatures/server/config"
 )
@@ -36,10 +37,45 @@ func ConnectDB(mongoURI string) (*mongo.Client) {
 	return client
 }
 
-func (r Repository) GetUsers() *mongo.Collection {
-	return r.Client.Database(config.MongoDatabase()).Collection("users")
+func (r Repository) GetCollection(collName string) *mongo.Collection {
+	return r.Client.Database(config.MongoDatabase()).Collection(collName)
 }
 
+// func (r Repository) All(collName string) []bson.M {
+// 	var results []bson.M
+// 	coll := r.GetCollection(collName)
+// 	cursor, err := coll.Find(context.Background(), bson.M{}).Decode(&results)
+// 	return results
+// }
+
+// type Document interface {
+// 	User
+// }
+
+func (r Repository) AddOne(collName string, doc interface{}) (*mongo.InsertOneResult, error) {
+	coll := r.GetCollection(collName)
+	result, insertErr := coll.InsertOne(context.Background(), doc)
+	if insertErr != nil {
+		panic(insertErr)
+		return nil, insertErr
+	}
+	return result, nil
+}
+
+func (r Repository) FindOne(collName string, filter bson.D) *mongo.SingleResult {
+	coll := r.GetCollection(collName)
+	return coll.FindOne(context.Background(), filter)
+}
+
+func (r Repository) UpdateOne(collName string, filter bson.M, field bson.M) bool {
+	// coll := r.GetCollection(collName)
+	// err := coll.InsertOne(context.Background(), filter, fields)
+	// if insertErr != nil {
+	// 	panic(insertErr)
+	// 	return false
+	// }
+	return true
+}
 
 var Repo = &Repository{
 	Client: ConnectDB(config.MongoURI()),

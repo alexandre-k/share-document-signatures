@@ -47,40 +47,36 @@ func Ping(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
-		// user := &user.User{
-		// 	ID: "08ec7dee-ba64-41f8-acaf-bcff4577ac44",
-		// 	Name: "alex",
-		// 	DisplayName: "alex",
-		// 	Credentials: []webauthn.Credential{},
-		// }
-		fmt.Println("NEW USER >")
-		user := models.NewUser()
-		web, err = webauthn.New(&webauthn.Config{
-			RPDisplayName: "Duo Labs", // Display Name for your site
-			RPID: "localhost", // Generally the FQDN for your site
-			RPOrigin: "http://localhost", // The origin URL for WebAuthn requests
-			RPIcon: "https://duo.com/logo.png", // Optional icon URL for your site
-		})
-		options, sessionData, _ := web.BeginRegistration(&user)
+	user, uErr := models.GetUserOrCreate("john")
+	if uErr != nil {
+		fmt.Println("Error while fetching or creating a user")
+	}
+	web, err = webauthn.New(&webauthn.Config{
+		RPDisplayName: "Duo Labs", // Display Name for your site
+		RPID: "localhost", // Generally the FQDN for your site
+		RPOrigin: "http://localhost", // The origin URL for WebAuthn requests
+		RPIcon: "https://duo.com/logo.png", // Optional icon URL for your site
+	})
+	options, sessionData, _ := web.BeginRegistration(&user)
 
-		added := models.AddUser(user)
+	// added := models.AddUser(user)
 
-		if !added {
-			fmt.Println("Unable to register user")
-		}
+	// if !added {
+	// 	fmt.Println("Unable to register user")
+	// }
 
-		fmt.Println("SESSION DATA > ", sessionData)
-		fmt.Println("OPTIONS > ", options)
+	// fmt.Println("SESSION DATA > ", sessionData)
+	// fmt.Println("OPTIONS > ", options)
 
-		if err != nil {
-			fmt.Println(err)
-		}
+	if err != nil {
+		fmt.Println(err)
+	}
 
 
-		c.JSON(http.StatusOK, gin.H{
-			"options": options,
-			// "message": "ok",
-		})
+	c.JSON(http.StatusOK, gin.H{
+		"options": options,
+		// "message": "ok",
+	})
 }
 
 func VerifyRegistration(c *gin.Context) {
