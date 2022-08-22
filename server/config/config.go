@@ -14,3 +14,25 @@ func MongoURI() string {
 func MongoDatabase() string {
 	return os.Getenv("MONGODB_DATABASE")
 }
+
+func Hostname() string {
+	hostname := os.Getenv("HOSTNAME")
+	if hostname == "" {
+		return "localhost"
+	} else {
+		return hostname
+	}
+}
+
+func RelyingParty() string {
+	rp := os.Getenv("RELYING_PARTY")
+	if rp == "" {
+		return "http://localhost"
+	} else {
+		return rp
+	}
+}
+
+func RpIcon() string {
+	return "https://duo.com/logo.png"
+}

@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	models "github.com/alexandre-k/share-document-signatures/server/models"
+	config "github.com/alexandre-k/share-document-signatures/server/config"
 	"go.mongodb.org/mongo-driver/bson"
 	// "github.com/duo-labs/webauthn/protocol"
 )
@@ -66,9 +67,9 @@ func Register(c *gin.Context) {
 	}
 	web, err = webauthn.New(&webauthn.Config{
 		RPDisplayName: "Duo Labs",                 // Display Name for your site
-		RPID:          "localhost",                // Generally the FQDN for your site
-		RPOrigin:      "http://localhost",         // The origin URL for WebAuthn requests
-		RPIcon:        "https://duo.com/logo.png", // Optional icon URL for your site
+		RPID:          config.Hostname(),                // Generally the FQDN for your site
+		RPOrigin:      config.RelyingParty(),         // The origin URL for WebAuthn requests
+		RPIcon:        config.RpIcon(), // Optional icon URL for your site
 	})
 	options, sessionData, _ := web.BeginRegistration(&user)
 
