@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"io/ioutil"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,7 @@ import (
 	"github.com/duo-labs/webauthn/webauthn"
 
 	models "github.com/alexandre-k/share-document-signatures/server/models"
-	// "go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	// "github.com/duo-labs/webauthn/protocol"
 )
 
@@ -47,7 +48,19 @@ func Ping(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
-	user, uErr := models.GetUserOrCreate("john")
+	jsonBlob, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Incorrect body."})
+	}
+	type RegisterRequestBody struct {
+		username string `"json:username"`
+	}
+	var reqBody RegisterRequestBody
+	bodyErr := json.Unmarshal(jsonBlob, &reqBody)
+	if bodyErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Incorrect json."})
+	}
+	user, uErr := models.GetUserOrCreate(reqBody.username)
 	if uErr != nil {
 		fmt.Println("Error while fetching or creating a user")
 	}
@@ -59,11 +72,11 @@ func Register(c *gin.Context) {
 	})
 	options, sessionData, _ := web.BeginRegistration(&user)
 
-	// added := models.AddUser(user)
+	updated := models.UpdateUser(user.Username, bson.M{ "currentChallenge": sessionData.Challenge })
 
-	// if !added {
-	// 	fmt.Println("Unable to register user")
-	// }
+	if !updated {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to find user while updating"})
+	}
 
 	// fmt.Println("SESSION DATA > ", sessionData)
 	// fmt.Println("OPTIONS > ", options)
@@ -72,10 +85,8 @@ func Register(c *gin.Context) {
 		fmt.Println(err)
 	}
 
-
 	c.JSON(http.StatusOK, gin.H{
 		"options": options,
-		// "message": "ok",
 	})
 }
 

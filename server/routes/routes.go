@@ -7,7 +7,7 @@ import (
 
 func FidoRegister(router *gin.RouterGroup) {
 	router.GET("/ping", controllers.Ping)
-	router.GET("/register", controllers.Register)
+	router.POST("/register", controllers.Register)
 	router.POST("/register/verify", controllers.VerifyRegistration)
 	router.GET("/user", controllers.GetUser)
 	router.POST("/user", controllers.AddUser)
