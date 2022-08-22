@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	controllers "github.com/alexandre-k/share-document-signatures/server/controllers"
+	"github.com/gin-gonic/gin"
 )
 
 func FidoRegister(router *gin.RouterGroup) {

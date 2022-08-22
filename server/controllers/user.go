@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"fmt"
 	"encoding/json"
-	"net/http"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/http"
 
 	models "github.com/alexandre-k/share-document-signatures/server/models"
 	// "go.mongodb.org/mongo-driver/bson"

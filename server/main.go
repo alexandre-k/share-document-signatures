@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	routes "github.com/alexandre-k/share-document-signatures/server/routes"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {

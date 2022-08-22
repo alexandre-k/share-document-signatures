@@ -7,8 +7,8 @@ import (
 	// "encoding/base64"
 	// "encoding/binary"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
 
 	// "github.com/google/uuid"
@@ -16,7 +16,6 @@ import (
 
 	repositories "github.com/alexandre-k/share-document-signatures/server/repositories"
 )
-
 
 // type User struct {
 // 	id string `bson:"_id,omitempty"`
@@ -28,12 +27,12 @@ import (
 // }
 
 type User struct {
-	Id primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Username string             `json:"username,omitempty" bson:"username, omitempty"`
-	DisplayName string             `json:"displayName,omitempty" bson:"displayName,omitempty`
-	Icon string             `json:"icon,omitempty" bson:"icon,omitempty`
-	PublicKey string           `json:"publicKey,omitempty", bson:"publicKey,omitempty"`
-	CurrentChallenge string           `json:"currentChallenge,omitempty" bson:"currentChallenge,omitempty"`
+	Id               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Username         string             `json:"username,omitempty" bson:"username, omitempty"`
+	DisplayName      string             `json:"displayName,omitempty" bson:"displayName,omitempty`
+	Icon             string             `json:"icon,omitempty" bson:"icon,omitempty`
+	PublicKey        string             `json:"publicKey,omitempty", bson:"publicKey,omitempty"`
+	CurrentChallenge string             `json:"currentChallenge,omitempty" bson:"currentChallenge,omitempty"`
 }
 
 // func GetAll() ([]User) {
@@ -58,17 +57,16 @@ func GetUserOrCreate(username string) (User, error) {
 	return user, nil
 }
 
-
-//  WebAuthnCredentials webauthn.Credential
+// WebAuthnCredentials webauthn.Credential
 func NewUser(username string) User {
 	// userUuid := uuid.New().String()
 	return User{
 		// Id: userUuid,
-		Id:       primitive.NewObjectID(),
-		Username: username,
-		DisplayName: username,
-		Icon: "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
-		PublicKey: "",
+		Id:               primitive.NewObjectID(),
+		Username:         username,
+		DisplayName:      username,
+		Icon:             "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
+		PublicKey:        "",
 		CurrentChallenge: "",
 		// Credentials: []webauthn.Credential{},
 	}
@@ -79,14 +77,14 @@ func GetNewUser() User {
 }
 
 func GetUser(username string) (User, error) {
-	foundUser := repositories.Repo.FindOne("users", bson.D{{ "username", username}})
+	foundUser := repositories.Repo.FindOne("users", bson.D{{"username", username}})
 	var user User
 	err := foundUser.Decode(&user)
 	return user, err
 }
 
 func UpdateUser(username string, fields bson.M) bool {
-	ok := repositories.Repo.UpdateOne("users", bson.M{ "username": username}, fields)
+	ok := repositories.Repo.UpdateOne("users", bson.M{"username": username}, fields)
 	return ok
 }
 
@@ -97,7 +95,6 @@ func (u User) WebAuthnID() []byte {
 	}
 	return bId
 }
-
 
 func (u User) WebAuthnName() string {
 	return u.Username
@@ -124,4 +121,3 @@ func (u User) WebAuthnCredentials() []webauthn.Credential {
 	// }
 	return []webauthn.Credential{}
 }
-

@@ -1,12 +1,12 @@
 package repositories
 
 import (
-	"log"
-	"time"
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/bson"
+	"log"
+	"time"
 
 	config "github.com/alexandre-k/share-document-signatures/server/config"
 )
@@ -15,7 +15,7 @@ type Repository struct {
 	Client *mongo.Client
 }
 
-func ConnectDB(mongoURI string) (*mongo.Client) {
+func ConnectDB(mongoURI string) *mongo.Client {
 	log.Println("Connecting to database ", mongoURI)
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoURI))
 	if err != nil {
