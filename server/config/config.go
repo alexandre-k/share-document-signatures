@@ -16,7 +16,8 @@ func MongoDatabase() string {
 }
 
 func Hostname() string {
-	hostname := os.Getenv("HOSTNAME")
+	hostname := ""
+	// hostname := os.Getenv("HOSTNAME")
 	if hostname == "" {
 		return "localhost"
 	} else {
@@ -27,7 +28,7 @@ func Hostname() string {
 func RelyingParty() string {
 	rp := os.Getenv("RELYING_PARTY")
 	if rp == "" {
-		return "http://localhost"
+		return "localhost"
 	} else {
 		return rp
 	}

@@ -29,10 +29,10 @@ import (
 type User struct {
 	Id               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Username         string             `json:"username,omitempty" bson:"username, omitempty"`
-	DisplayName      string             `json:"displayName,omitempty" bson:"displayName,omitempty`
+	DisplayName      string             `json:"displayname,omitempty" bson:"displayname,omitempty`
 	Icon             string             `json:"icon,omitempty" bson:"icon,omitempty`
-	PublicKey        string             `json:"publicKey,omitempty", bson:"publicKey,omitempty"`
-	CurrentChallenge string             `json:"currentChallenge,omitempty" bson:"currentChallenge,omitempty"`
+	PublicKey        string             `json:"publickey,omitempty", bson:"publickey,omitempty"`
+	Challenge string             `json:"challenge,omitempty" bson:"challenge,omitempty"`
 }
 
 // func GetAll() ([]User) {
@@ -42,7 +42,6 @@ type User struct {
 func AddUser(username string) (User, error) {
 	user := NewUser(username)
 	// var bUser []byte
-	fmt.Println("User > ", user)
 	// bUser, _ = bson.Marshal(user)
 	repositories.Repo.AddOne("users", user)
 	return user, nil
@@ -51,7 +50,7 @@ func AddUser(username string) (User, error) {
 func GetUserOrCreate(username string) (User, error) {
 	user, err := GetUser(username)
 	if err != nil {
-		fmt.Println("Adding new user instead of fetching")
+		fmt.Println("Adding new user instead of fetching ", username)
 		return AddUser(username)
 	}
 	return user, nil
@@ -67,7 +66,7 @@ func NewUser(username string) User {
 		DisplayName:      username,
 		Icon:             "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
 		PublicKey:        "",
-		CurrentChallenge: "",
+		Challenge: "",
 		// Credentials: []webauthn.Credential{},
 	}
 }

@@ -48,20 +48,29 @@ func Ping(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ping": "pong"})
 }
 
-func Register(c *gin.Context) {
+func GetParams(c *gin.Context) (map[string]string, gin.H) {
 	jsonBlob, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Incorrect body."})
+		return nil, gin.H{"error": "Incorrect body."}
 	}
-	type RegisterRequestBody struct {
-		username string `"json:username"`
-	}
-	var reqBody RegisterRequestBody
+	var reqBody = map[string]string{}
 	bodyErr := json.Unmarshal(jsonBlob, &reqBody)
 	if bodyErr != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Incorrect json."})
+		return nil, gin.H{"error": "Incorrect json."}
 	}
-	user, uErr := models.GetUserOrCreate(reqBody.username)
+	if reqBody["username"] == "" {
+		return nil, gin.H{"error": "No username found."}
+	}
+	return reqBody, nil
+}
+
+func Register(c *gin.Context) {
+	params, pErr := GetParams(c)
+	if pErr != nil {
+		c.JSON(http.StatusNotFound, pErr)
+		return
+	}
+	user, uErr := models.GetUserOrCreate(params["username"])
 	if uErr != nil {
 		fmt.Println("Error while fetching or creating a user")
 	}
@@ -73,10 +82,11 @@ func Register(c *gin.Context) {
 	})
 	options, sessionData, _ := web.BeginRegistration(&user)
 
-	updated := models.UpdateUser(user.Username, bson.M{"currentChallenge": sessionData.Challenge})
+	updated := models.UpdateUser(user.Username, bson.M{"challenge": sessionData.Challenge})
 
 	if !updated {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to find user while updating"})
+		return
 	}
 
 	// fmt.Println("SESSION DATA > ", sessionData)
@@ -92,17 +102,20 @@ func Register(c *gin.Context) {
 }
 
 func VerifyRegistration(c *gin.Context) {
-	// user := datastore.GetUser() // Get the user
-	// Get the session data stored from the function above
-	// using gorilla/sessions it could look like this
-
-	jsonData, err := ioutil.ReadAll(c.Request.Body)
+	params, err := GetParams(c)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		c.JSON(http.StatusNotFound, err)
+		return
 	}
-	fmt.Println("json: ", jsonData)
-	c.JSON(http.StatusOK, gin.H{"message": "not implemented"})
-	// fmt.Println(jsonData.clientDataJSON)
+	user, uErr := models.GetUser(params["username"])
+	if uErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Problem while fetching a user with the given username"})
+		return
+	}
+	if user.Challenge != params["challenge"] {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to match the given challenge"})
+		return
+	}
 
 	// filter := bson.M{ "currentChallenge": bson.M{ "$eq": sessionData.Challenge, } }
 	// update := bson.M{ "$set": bson.M{ "currentChallenge": sessionData.Challenge }}
