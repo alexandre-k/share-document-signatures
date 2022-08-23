@@ -82,7 +82,8 @@ func Register(c *gin.Context) {
 	})
 	options, sessionData, _ := web.BeginRegistration(&user)
 
-	updated := models.UpdateUser(user.Username, bson.M{"challenge": sessionData.Challenge})
+	fmt.Println("Update: ", user.Username, sessionData.Challenge)
+	updated := models.UpdateUser(user.Username, bson.M{ "$set": bson.M{"challenge": sessionData.Challenge} })
 
 	if !updated {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to find user while updating"})

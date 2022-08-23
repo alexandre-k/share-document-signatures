@@ -42,10 +42,10 @@ export const registerUser = async () => {
             challenge: options.publicKey.challenge,
             authenticatorAttachment: newCredential.authenticatorAttachment,
             id: newCredential.id,
-            response: {
-                attestationObject: btoa(String.fromCharCode(...new Uint8Array(newCredential.response.attestationObject))),
-                clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(newCredential.response.clientDataJSON)))
-            },
+            //response: {
+            attestationObject: btoa(String.fromCharCode(...new Uint8Array(newCredential.response.attestationObject))),
+            clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(newCredential.response.clientDataJSON))),
+            //},
             type: newCredential.type
         }
         console.log(JSON.stringify(decodedCredential))

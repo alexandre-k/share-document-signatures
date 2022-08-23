@@ -67,13 +67,13 @@ func (r Repository) FindOne(collName string, filter bson.D) *mongo.SingleResult 
 	return coll.FindOne(context.Background(), filter)
 }
 
-func (r Repository) UpdateOne(collName string, filter bson.M, field bson.M) bool {
-	// coll := r.GetCollection(collName)
-	// err := coll.InsertOne(context.Background(), filter, fields)
-	// if insertErr != nil {
-	// 	panic(insertErr)
-	// 	return false
-	// }
+func (r Repository) UpdateOne(collName string, filter bson.M, fields bson.M) bool {
+	coll := r.GetCollection(collName)
+	result, err := coll.UpdateOne(context.Background(), filter, fields)
+	if err != nil {
+	 	panic(err)
+	 	return false
+	}
 	return true
 }
 
