@@ -28,7 +28,7 @@ func Hostname() string {
 func RelyingParty() string {
 	rp := os.Getenv("RELYING_PARTY")
 	if rp == "" {
-		return "localhost"
+		return "http://localhost"
 	} else {
 		return rp
 	}

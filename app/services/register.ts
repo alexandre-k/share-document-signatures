@@ -3,63 +3,62 @@ import { startRegistration } from '@simplewebauthn/browser';
 import { startAuthentication } from '@simplewebauthn/browser';
 
 
-export const registerUser = async () => {
+// array buffer to URLBase64
+const bufferToBase64Url = (buff: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buff)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+
+// Base64 to array buffer
+const base64ToBuffer = (val: string) => Uint8Array.from(atob(val), c => c.charCodeAt(0));
+
+export const registerUser = async (username: string) => {
+    if (username === "") {
+        console.log("Username not found!")
+        return -1
+    }
     try {
-        const response = await fetch('http://localhost/api/fido/register', {
+        const response = await fetch(
+            window.location.origin + '/api/fido/register', {
             method: 'POST',
             headers: {
                 "Content-type": "application/json"
             },
-            body: JSON.stringify({username: 'john'})
+            body: JSON.stringify({ username })
         })
-        const { value: optionsBytes } = await response.body.getReader().read()
-        const encoder = new TextEncoder();
-        const decoder = new TextDecoder();
-        const optionsBody = JSON.parse(decoder.decode(optionsBytes))
-        // const credentialOptions = optionsBody.options
-        const options = optionsBody.options;
+        const { options } = await response.json()
+        options.publicKey.challenge = base64ToBuffer(options.publicKey.challenge);
+        options.publicKey.user.id = base64ToBuffer(options.publicKey.user.id);
 
-        const credentialOptionsPublicKey = {
-            ...options.publicKey,
-            challenge: encoder.encode(options.publicKey.challenge),
-            user: {
-                id: encoder.encode(options.publicKey.user.id),
-                name: encoder.encode(options.publicKey.user.name),
-                displayName: encoder.encode(options.publicKey.user.name)
-            },
-            authenticatorSelection: {
-                userVerification: "preferred"
-            }
-        };
+        const newCredential = await navigator.credentials.create({
+            publicKey: options.publicKey
+        });
 
-        const newCredential = await navigator.credentials.create({...options, ...{
-                publicKey: { ...credentialOptionsPublicKey },
-        }});
-
-        // registerNewCredential(newCredential);
+        console.log("New credential:  ", newCredential)
         const decodedCredential = {
-            username: options.publicKey.user.name,
-            challenge: options.publicKey.challenge,
-            authenticatorAttachment: newCredential.authenticatorAttachment,
+            rawId: bufferToBase64Url(newCredential.rawId),
             id: newCredential.id,
-            //response: {
-            attestationObject: btoa(String.fromCharCode(...new Uint8Array(newCredential.response.attestationObject))),
-            clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(newCredential.response.clientDataJSON))),
-            //},
+            response: {
+                attestationObject: bufferToBase64Url(newCredential.response.attestationObject),
+                clientDataJSON: bufferToBase64Url(newCredential.response.clientDataJSON),
+            },
             type: newCredential.type
         }
         console.log(JSON.stringify(decodedCredential))
-        const verificationResp = await fetch("http://localhost/api/fido/register/verify", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(decodedCredential),
-        });
-        const { value: verificationBytes } = await verificationResp.body.getReader().read();
-        const stringifiedVerif = Buffer.from(verificationBytes).toString('utf-8');
-        console.log('verification ', JSON.parse(stringifiedVerif))
-        localStorage['verification'] = stringifiedVerif;
+        const verificationResp = await fetch(
+            window.location.origin + "/api/fido/register/" + username + "/verify",
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(decodedCredential)
+            }
+        );
+
+        const { credential } = await verificationResp.json()
+        console.log('verified credential ', JSON.parse(credential))
+        localStorage['credential'] = credential;
     } catch (error) {
         // Some basic error handling
         if (error.name === 'InvalidStateError') {

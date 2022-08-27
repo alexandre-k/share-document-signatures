@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Loading, Grid } from "@nextui-org/react";
 import type { NextPage } from 'next'
 import { Button } from '@nextui-org/react';
+import { Input } from "@nextui-org/react";
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
@@ -54,6 +55,7 @@ interface HomeProps {
 
 const Home: NextPage = (homeProps: HomeProps) => {
     console.log(homeProps)
+    const [username, setUsername] = useState<string>("");
     const [isRegistering, setIsRegistering] = useState<boolean>(false);
     const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
 
@@ -73,6 +75,7 @@ const Home: NextPage = (homeProps: HomeProps) => {
                 <a href={homeProps.data[0].filesUrl}>
                     {homeProps.data[0].filesUrl}
                 </a>
+                <Input value={username} clearable labelLeft="Username" placeholder="john__" type="text" onChange={e => setUsername(e.target.value) } />
             </div>
         </div>
 
@@ -82,7 +85,7 @@ const Home: NextPage = (homeProps: HomeProps) => {
                 <Button shadow disabled={isRegistering || isAuthenticating} onPress={async () => {
                     try {
                         setIsRegistering(true)
-                        await registerUser()
+                        await registerUser(username)
                         setIsRegistering(false)
                     } catch {
                         setIsRegistering(false)
