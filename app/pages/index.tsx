@@ -7,7 +7,7 @@ import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
 import { registerUser } from '../services/register';
-import { authenticate } from '../services/login';
+import { login } from '../services/login';
 /**
  * It is strongly advised that authenticators get their own DB
  * table, ideally with a foreign key to a specific UserModel.
@@ -101,10 +101,11 @@ const Home: NextPage = (homeProps: HomeProps) => {
                 <Button
                     shadow
                     disabled={isRegistering || isAuthenticating}
-                    onPress={() =>{
+                    onPress={async () =>{
                         try {
                             setIsAuthenticating(true)
-                            authenticate()
+                            await login(username)
+                            setIsAuthenticating(false)
                         }
                         catch {
                             setIsAuthenticating(false);

@@ -1,16 +1,5 @@
-import SimpleWebAuthnBrowser from '@simplewebauthn/browser';
-import { startRegistration } from '@simplewebauthn/browser';
-import { startAuthentication } from '@simplewebauthn/browser';
+import { bufferToBase64Url, base64ToBuffer } from '../utils/encoding';
 
-
-// array buffer to URLBase64
-const bufferToBase64Url = (buff: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buff)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-
-// Base64 to array buffer
-const base64ToBuffer = (val: string) => Uint8Array.from(atob(val), c => c.charCodeAt(0));
 
 export const registerUser = async (username: string) => {
     if (username === "") {
