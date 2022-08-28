@@ -9,8 +9,7 @@ import (
 	"encoding/binary"
 
 	"go.mongodb.org/mongo-driver/bson"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	// "github.com/google/uuid"
 	"github.com/duo-labs/webauthn/webauthn"
@@ -28,15 +27,15 @@ import (
 // }
 
 type User struct {
-	// Id               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Id               uint64             `json:"id,omitempty" bson:"id, omitempty"`
+	Id               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	UserId               uint64             `json:"id,omitempty" bson:"id, omitempty"`
 	Username         string             `json:"username,omitempty" bson:"username, omitempty"`
 	DisplayName      string             `json:"displayname,omitempty" bson:"displayname,omitempty`
 	Icon             string             `json:"icon,omitempty" bson:"icon,omitempty`
 	PublicKey        string             `json:"publickey,omitempty", bson:"publickey,omitempty"`
 	// Challenge string             `json:"challenge,omitempty" bson:"challenge,omitempty"`
 	// SessionData      webauthn.SessionData `json:"sessionData,omitempty" bson:"sessionData,omitempty"`
-	Credentials      []webauthn.Credential `json:"credentials,omitempty" bson:"credentials,omitempty"`
+	Credentials      []webauthn.Credential `json:"credentials" bson:"credentials"`
 }
 
 // func GetAll() ([]User) {
@@ -54,6 +53,7 @@ func AddUser(username string) (User, error) {
 func GetUserOrCreate(username string) (User, error) {
 	user, err := GetUser(username)
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println("Adding new user instead of fetching ", username)
 		return AddUser(username)
 	}
@@ -71,13 +71,13 @@ func NewUser(username string) User {
 	// userUuid := uuid.New().String()
 	return User{
 		// Id: userUuid,
-		// Id:               primitive.NewObjectID(),
-		Id:               randomUint64(),
+		Id:               primitive.NewObjectID(),
+		UserId:               randomUint64(),
 		Username:         username,
 		DisplayName:      username,
 		Icon:             "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
 		PublicKey:        "",
-		Challenge: "",
+		// Challenge: "",
 		// SessionData: webauthn.SessionData{},
 		Credentials: []webauthn.Credential{},
 	}
@@ -109,7 +109,7 @@ func UpdateUser(username string, fields bson.M) bool {
 
 func (u User) WebAuthnID() []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
-	binary.PutUvarint(buf, uint64(u.Id))
+	binary.PutUvarint(buf, uint64(u.UserId))
 	return buf
 }
 

@@ -108,13 +108,13 @@ func VerifyRegistration(c *gin.Context) {
 
 	username := c.Param("username")
 	if username == "" {
-		c.JSON(http.StatusNotFound, gin.H{ "error": "No username given."})
+		c.JSON(http.StatusBadRequest, gin.H{ "error": "No username given."})
 		return
 	}
 
 	user, uErr := models.GetUser(username)
 	if uErr != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Problem while fetching a user with the given username"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Could not fetch a user identified by the given username. Did you register it?"})
 		return
 	}
 
@@ -127,17 +127,47 @@ func VerifyRegistration(c *gin.Context) {
 
 	// Verify that the challenge succeeded
 	cred, vErr := web.FinishRegistration(&user, session, c.Request)
-	fmt.Println("CRED > ", cred, " ERR ", vErr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to verify the challenge"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{ "credential": cred })
 
-	// sessionData := store.Get(r, "registration-session")
-	// parsedResponse, err := protocol.ParseCredentialCreationResponseBody(r.Body)
-	// credential, err := web.CreateCredential(&user, sessionData, parsedResponse)
-	// Handle validation or input errors
-	// If creation was successful, store the credential object
-	// JSONResponse(w, "Registration Success", http.StatusOK) // Handle next steps
+	updated := models.UpdateUser(user.Username, bson.M{ "$set": bson.M{"credentials": []webauthn.Credential{*cred}} })
+
+	if !updated {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to save credentials"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{ "credential": cred })
+}
+
+func Login(c *gin.Context) {
+	username := c.Param("username")
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{ "error": "No username given."})
+		return
+	}
+
+	user, uErr := models.GetUser(username)
+	if uErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Could not fetch a user identified by the given username. Did you register it?"})
+		return
+	}
+
+	options, session, err := web.BeginLogin(user)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{ "error": "Unable to get credential to start login"})
+		return
+	}
+	// store session data as marshaled JSON
+	err = sessionStore.SaveWebauthnSession("authentication", session, c.Request, c.Writer)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{ "error": "Unable to save session" })
+		return
+	}
+
+	c.JSON(http.StatusOK, options)
 }

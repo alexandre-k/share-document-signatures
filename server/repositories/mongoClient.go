@@ -69,7 +69,7 @@ func (r Repository) FindOne(collName string, filter bson.D) *mongo.SingleResult 
 
 func (r Repository) UpdateOne(collName string, filter bson.M, fields bson.M) bool {
 	coll := r.GetCollection(collName)
-	result, err := coll.UpdateOne(context.Background(), filter, fields)
+	_, err := coll.UpdateOne(context.Background(), filter, fields)
 	if err != nil {
 	 	panic(err)
 	 	return false
