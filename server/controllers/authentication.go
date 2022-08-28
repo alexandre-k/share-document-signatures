@@ -127,7 +127,7 @@ func VerifyRegistration(c *gin.Context) {
 
 	// Verify that the challenge succeeded
 	cred, vErr := web.FinishRegistration(&user, session, c.Request)
-	if err != nil {
+	if vErr != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to verify the challenge"})
 		return
 	}
@@ -170,4 +170,34 @@ func Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, options)
+}
+
+func VerifyLogin(c *gin.Context) {
+	username := c.Param("username")
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No username given."})
+		return
+	}
+
+	user, uErr := models.GetUser(username)
+	if uErr != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Could not fetch a user identified by the given username. Did you register it?"})
+		return
+	}
+
+	// load the session data
+	session, err := sessionStore.GetWebauthnSession("authentication", c.Request)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	data, err := web.FinishLogin(user, session, c.Request)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to finish login"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{ "message": "ok", "data": data })
 }

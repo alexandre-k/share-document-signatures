@@ -10,6 +10,7 @@ func FidoRegister(router *gin.RouterGroup) {
 	router.POST("/register", controllers.Register)
 	router.POST("/register/:username/verify", controllers.VerifyRegistration)
 	router.POST("/login/:username", controllers.Login)
+	router.POST("/login/:username/verify", controllers.VerifyLogin)
 	router.GET("/user", controllers.GetUser)
 	router.POST("/user", controllers.AddUser)
 }
