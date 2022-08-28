@@ -71,8 +71,8 @@ func (r Repository) UpdateOne(collName string, filter bson.M, fields bson.M) boo
 	coll := r.GetCollection(collName)
 	_, err := coll.UpdateOne(context.Background(), filter, fields)
 	if err != nil {
-	 	panic(err)
-	 	return false
+		panic(err)
+		return false
 	}
 	return true
 }

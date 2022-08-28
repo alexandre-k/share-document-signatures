@@ -27,15 +27,15 @@ import (
 // }
 
 type User struct {
-	Id               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	UserId               uint64             `json:"id,omitempty" bson:"id, omitempty"`
-	Username         string             `json:"username,omitempty" bson:"username, omitempty"`
-	DisplayName      string             `json:"displayname,omitempty" bson:"displayname,omitempty`
-	Icon             string             `json:"icon,omitempty" bson:"icon,omitempty`
-	PublicKey        string             `json:"publickey,omitempty", bson:"publickey,omitempty"`
+	Id          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	UserId      uint64             `json:"id,omitempty" bson:"id, omitempty"`
+	Username    string             `json:"username,omitempty" bson:"username, omitempty"`
+	DisplayName string             `json:"displayname,omitempty" bson:"displayname,omitempty`
+	Icon        string             `json:"icon,omitempty" bson:"icon,omitempty`
+	PublicKey   string             `json:"publickey,omitempty", bson:"publickey,omitempty"`
 	// Challenge string             `json:"challenge,omitempty" bson:"challenge,omitempty"`
 	// SessionData      webauthn.SessionData `json:"sessionData,omitempty" bson:"sessionData,omitempty"`
-	Credentials      []webauthn.Credential `json:"credentials" bson:"credentials"`
+	Credentials []webauthn.Credential `json:"credentials" bson:"credentials"`
 }
 
 // func GetAll() ([]User) {
@@ -71,12 +71,12 @@ func NewUser(username string) User {
 	// userUuid := uuid.New().String()
 	return User{
 		// Id: userUuid,
-		Id:               primitive.NewObjectID(),
-		UserId:               randomUint64(),
-		Username:         username,
-		DisplayName:      username,
-		Icon:             "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
-		PublicKey:        "",
+		Id:          primitive.NewObjectID(),
+		UserId:      randomUint64(),
+		Username:    username,
+		DisplayName: username,
+		Icon:        "https://cdn.icon-icons.com/icons2/3635/PNG/512/ship_boat_cruise_icon_227545.png",
+		PublicKey:   "",
 		// Challenge: "",
 		// SessionData: webauthn.SessionData{},
 		Credentials: []webauthn.Credential{},
@@ -112,7 +112,6 @@ func (u User) WebAuthnID() []byte {
 	binary.PutUvarint(buf, uint64(u.UserId))
 	return buf
 }
-
 
 func (u User) WebAuthnName() string {
 	return u.Username

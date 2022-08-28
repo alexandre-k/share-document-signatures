@@ -9,27 +9,27 @@ import (
 	"fmt"
 
 	"github.com/duo-labs/webauthn.io/session"
-	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/duo-labs/webauthn/protocol"
+	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"io/ioutil"
 	"net/http"
 
-	models "github.com/alexandre-k/share-document-signatures/server/models"
 	config "github.com/alexandre-k/share-document-signatures/server/config"
+	models "github.com/alexandre-k/share-document-signatures/server/models"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
-	web    *webauthn.WebAuthn
-	client *mongo.Client
+	web          *webauthn.WebAuthn
+	client       *mongo.Client
 	sessionStore *session.Store
-	err    error
+	err          error
 )
 
 type Params struct {
-	Username string `json:"username,omitempty"`
+	Username  string `json:"username,omitempty"`
 	Challenge string `json:"challenge,omitempty"`
 }
 
@@ -38,37 +38,37 @@ func Ping(c *gin.Context) {
 }
 
 func GetParams(c *gin.Context) (Params, gin.H) {
-	       jsonBlob, err := ioutil.ReadAll(c.Request.Body)
-	       if err != nil {
-					 return Params{Username: ""}, gin.H{"error": "Incorrect body."}
-		       }
-	       var reqBody Params
-	       bodyErr := json.Unmarshal(jsonBlob, &reqBody)
-	       if bodyErr != nil {
-					 return Params{Username: ""}, gin.H{"error": "Incorrect json."}
-		       }
-	       if reqBody.Username == "" {
-					 return Params{Username: ""}, gin.H{"error": "No username found."}
-		       }
-	       return reqBody, nil
+	jsonBlob, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		return Params{Username: ""}, gin.H{"error": "Incorrect body."}
 	}
+	var reqBody Params
+	bodyErr := json.Unmarshal(jsonBlob, &reqBody)
+	if bodyErr != nil {
+		return Params{Username: ""}, gin.H{"error": "Incorrect json."}
+	}
+	if reqBody.Username == "" {
+		return Params{Username: ""}, gin.H{"error": "No username found."}
+	}
+	return reqBody, nil
+}
 
 func Register(c *gin.Context) {
-	       params, pErr := GetParams(c)
-	       if pErr != nil {
-		               c.JSON(http.StatusNotFound, pErr)
-		               return
-		       }
+	params, pErr := GetParams(c)
+	if pErr != nil {
+		c.JSON(http.StatusNotFound, pErr)
+		return
+	}
 
 	user, uErr := models.GetUserOrCreate(params.Username)
 	if uErr != nil {
 		fmt.Println("Error while fetching or creating a user")
 	}
 	web, err = webauthn.New(&webauthn.Config{
-		RPDisplayName: "Duo Labs",                 // Display Name for your site
-		RPID:          config.Hostname(),                // Generally the FQDN for your site
-		RPOrigin:      config.RelyingParty(),         // The origin URL for WebAuthn requests
-		RPIcon:        config.RpIcon(), // Optional icon URL for your site
+		RPDisplayName: "Duo Labs",            // Display Name for your site
+		RPID:          config.Hostname(),     // Generally the FQDN for your site
+		RPOrigin:      config.RelyingParty(), // The origin URL for WebAuthn requests
+		RPIcon:        config.RpIcon(),       // Optional icon URL for your site
 	})
 	options, sessionData, err := web.BeginRegistration(&user)
 
@@ -83,7 +83,7 @@ func Register(c *gin.Context) {
 
 	// store session data as marshaled JSON
 	err = sessionStore.SaveWebauthnSession("registration", sessionData, c.Request, c.Writer)
-	updated := models.UpdateUser(user.Username, bson.M{ "$set": bson.M{"sessionData": sessionData} })
+	updated := models.UpdateUser(user.Username, bson.M{"$set": bson.M{"sessionData": sessionData}})
 
 	if !updated {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to find user while updating"})
@@ -100,7 +100,7 @@ func Register(c *gin.Context) {
 }
 
 type VerifyCredential struct {
-  protocol.CredentialCreationResponse
+	protocol.CredentialCreationResponse
 	Username string
 }
 
@@ -108,7 +108,7 @@ func VerifyRegistration(c *gin.Context) {
 
 	username := c.Param("username")
 	if username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{ "error": "No username given."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No username given."})
 		return
 	}
 
@@ -132,20 +132,20 @@ func VerifyRegistration(c *gin.Context) {
 		return
 	}
 
-	updated := models.UpdateUser(user.Username, bson.M{ "$set": bson.M{"credentials": []webauthn.Credential{*cred}} })
+	updated := models.UpdateUser(user.Username, bson.M{"$set": bson.M{"credentials": []webauthn.Credential{*cred}}})
 
 	if !updated {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Unable to save credentials"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{ "credential": cred })
+	c.JSON(http.StatusOK, gin.H{"credential": cred})
 }
 
 func Login(c *gin.Context) {
 	username := c.Param("username")
 	if username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{ "error": "No username given."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No username given."})
 		return
 	}
 
@@ -158,14 +158,14 @@ func Login(c *gin.Context) {
 	options, session, err := web.BeginLogin(user)
 	if err != nil {
 		log.Println(err)
-		c.JSON(http.StatusInternalServerError, gin.H{ "error": "Unable to get credential to start login"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to get credential to start login"})
 		return
 	}
 	// store session data as marshaled JSON
 	err = sessionStore.SaveWebauthnSession("authentication", session, c.Request, c.Writer)
 	if err != nil {
 		log.Println(err)
-		c.JSON(http.StatusInternalServerError, gin.H{ "error": "Unable to save session" })
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save session"})
 		return
 	}
 
