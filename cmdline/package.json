@@ -12,7 +12,8 @@
   "dependencies": {
     "@openpgp/wkd-client": "^0.0.3",
     "openpgp": "^5.5.0",
-    "yargs": "^17.5.1"
+    "yargs": "^17.5.1",
+    "hellosign-sdk": "file:./../app/hellosign-sdk-6.0.0.tgz"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
