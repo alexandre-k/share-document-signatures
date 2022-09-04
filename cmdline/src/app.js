@@ -283,8 +283,23 @@ const getPublicKeys = async (filename) => {
     return await openpgp.readKey({ armoredKey: await getArmoredFile(filename) });
 }
 
+const getDecryptedPrivateKey = async (pkey) => {
+    if (pkey.isEncrypted) {
+        const prompt = promptSync({ hidden: true, echo: '*' });
+        console.log("Enter the passphrase to decrypt your private key:");
+        const passphrase = prompt({ echo: '*'});
+        return await openpgp.decryptKey({
+            privateKey: await getPrivateKey(privateKey),
+            passphrase
+        });
+    } else {
+        return pkey;
+    }
+}
+
 const getPrivateKey = async (filename) => {
-    return await openpgp.readKey({ armoredKey: await getArmoredFile(filename) });
+    const buf = fs.readFileSync(filename)
+    return await openpgp.readPrivateKey({ binaryKey: buf });
 }
 
 const getArmoredFile = async (filename) => {
@@ -324,34 +339,22 @@ const createApp = async () => {
 }
 
 const formatData = async (filename, recipientAddress, publicKey, privateKey, server) => {
-    console.log('FORMAT DATA > ', privateKey)
     const data = await fsPromises.readFile(filename)
     const encryptedData = await encryptData(
         data, recipientAddress, publicKey, server)
     console.log('Encrypted data:\n', encryptedData)
 
-    const prompt = promptSync({ hidden: true, echo: '*' });
-    console.log("Enter the passphrase to decrypt your private key:");
-    const passphrase = prompt({ echo: '*'})
-    const privateKeyDecrypted = await openpgp.decryptKey({
-        privateKey: await openpgp.readPrivateKey(
-            { armoredKey: await getPrivateKey(privateKey) }),
-        passphrase
-    });
+    const pkey = await getPrivateKey(privateKey)
+    const privateKeyDecrypted = await getDecryptedPrivateKey(pkey)
 
-    const unsignedMessage = await openpgp.createCleartextMessage(
-        { text: data });
+    const unsignedMessage = await openpgp.createMessage(
+        { binary: data });
 
-    const cleartextMessage = await openpgp.sign({
+    const signedMessage = await openpgp.sign({
         message: unsignedMessage,
         signingKeys: privateKeyDecrypted
     });
-
-    const signedMessage = await openpgp.readCleartextMessage({
-        cleartextMessage
-    });
-
-    console.log(encryptedData, signedMessage)
+    console.log('Signed message:\n', signedMessage)
 
     return [encryptedData, signedMessage]
 }
