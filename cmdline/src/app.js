@@ -111,7 +111,7 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
           break;
       }
       case "upload": {
-          const [encryptedData, signedMessage] = await formatData(
+          const encryptedData = await formatData(
               argv.name,
               argv.recipientAddress,
               argv.publicKey,
@@ -120,7 +120,6 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
 
           await uploadFile(
               encryptedData,
-              signedMessage,
               argv.name,
               argv.document,
               argv.recipientAddress,
@@ -179,13 +178,14 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
 //     accountId: string
 //     emailAddress: string
 // }
-const encryptData = async (data, recipientAddress, publicKeyFile, wkdServer) => {
+const encryptDataAndSign = async (data, recipientAddress, publicKeyFile, wkdServer, privateKey) => {
     const pubKeys = !!publicKeyFile ?
           await getPublicKeys(publicKeyFile) :
           await lookupEmailPubKey(recipientAddress, wkdServer)
     const encrypted = await openpgp.encrypt({
         message: await openpgp.createMessage({ binary: data }),
-        encryptionKeys: pubKeys
+        encryptionKeys: pubKeys,
+        signingKeys: privateKey
     });
     return encrypted
 }
@@ -194,7 +194,6 @@ const encryptData = async (data, recipientAddress, publicKeyFile, wkdServer) => 
 const getAccountInfo = async () => {
     const api = new HelloSignSDK.AccountApi();
     api.username = process.env.HELLOSIGN_API_KEY;
-    console.log(process.env.HELLOSIGN_API_KEY)
 
     const response = await api.accountGet();
     return response.body.account;
@@ -340,33 +339,18 @@ const createApp = async () => {
 
 const formatData = async (filename, recipientAddress, publicKey, privateKey, server) => {
     const data = await fsPromises.readFile(filename)
-    const encryptedData = await encryptData(
-        data, recipientAddress, publicKey, server)
-    console.log('Encrypted data:\n', encryptedData)
 
     const pkey = await getPrivateKey(privateKey)
     const privateKeyDecrypted = await getDecryptedPrivateKey(pkey)
 
-    const unsignedMessage = await openpgp.createMessage(
-        { binary: data });
+    const encryptedData = await encryptDataAndSign(
+        data, recipientAddress, publicKey, server, privateKeyDecrypted)
+    console.log('Encrypted data:\n', encryptedData)
 
-    const signedMessage = await openpgp.sign({
-        message: unsignedMessage,
-        signingKeys: privateKeyDecrypted
-    });
-    console.log('Signed message:\n', signedMessage)
-
-    return [encryptedData, signedMessage]
+    return encryptedData
 }
 
-const createQrCode = async (encryptedData) => {
-    const qrPdf = qr.image(signaturePdf, { type: 'pdf' })
-    qrPdf.pipe(fs.createWriteStream('encrypted_data.pdf'))
-    console.log('Qr code generated...')
-
-}
-
-const uploadFile = async (encryptedData, signedMessage, filename, doc, recipientAddress, recipientName) => {
+const uploadFile = async (encryptedData, filename, doc, recipientAddress, recipientName) => {
     const s3 = new AWS.S3({
         endpoint: 'https://s3.filebase.com',
         region: 'us-east-1',
@@ -375,11 +359,16 @@ const uploadFile = async (encryptedData, signedMessage, filename, doc, recipient
         secretAccessKey: process.env.FILEBASE_SECRET_ACCESS_KEY,
     });
 
+    // const textFileName = 'encrypted_data.txt'
+    const data = '==================' + filename + '==================\n\n' + encryptedData + '\n\n========================================================'
+    // await createTextFile(data, textFileName)
+    // const pdfContent = fs.readFileSync(pdfName)
+
     try {
         const params = {
             Bucket: 'hellosign',
             Key: filename,
-            Body: encryptedData,
+            Body: data
         };
         const request = s3.putObject(params)
         request.on('httpHeaders', async (statusCode, headers) => {
@@ -399,8 +388,8 @@ const uploadFile = async (encryptedData, signedMessage, filename, doc, recipient
                 testClientId,
                 title: "Signature for " + filename,
                 subject: "Signature request for " + filename,
-                message: "<div>You can access the encrypted document from this URL: <br /></div>" + fileBaseGatewayUrl + "<br />",
-                fileUrl: [],
+                message: "You can access the encrypted document from this URL: \n" + fileBaseGatewayUrl + "\n\n" + "Encrypted data:\n" + encryptedData + "\n\n",
+                fileUrl: [fileBaseGatewayUrl],
                 willSend: true,
                 testMode: true
             });
