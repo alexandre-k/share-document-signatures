@@ -122,7 +122,6 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
               // @ts-ignore
               encryptedData,
               argv.name as string,
-              argv.document as string,
               testClientId,
               argv.recipientAddress as string,
               argv.recipientName as string)
@@ -160,7 +159,6 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
                   mail: argv.recipientAddress as string,
                   name: argv.recipientName as string
               }],
-              doc: argv.document as string,
               clientId: testClientId,
               title: "NDA with Acme Co.",
               subject: "The NDA we talked about",
@@ -168,14 +166,14 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
               fileUrl: "https://paulklipp.com/images/OnePageContract.pdf",
               testMode: true
           });
-          if (request === undefined || request.signatureRequest === undefined) {
-              console.log('Unable to send a signature request...')
-          } else {
+          if (request !== undefined && request.signatureRequest !== undefined) {
             console.log('Request id: ', request.signatureRequest.signatureRequestId)
             console.log('Requester: ', request.signatureRequest.requesterEmailAddress)
             console.log('Details url: ', request.signatureRequest.detailsUrl)
             console.log('Signatures: ', request.signatureRequest.signatures)
             console.log('Request done!')
+          } else {
+              console.log('Unable to send a signature request...')
           }
         break;
       }

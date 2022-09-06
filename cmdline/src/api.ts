@@ -9,7 +9,6 @@ export type Signer = {
 
 export interface IGenerateSignatureRequestData {
     signers: Signer[];
-    doc: string;
     clientId: string;
     title: string;
     subject: string;
@@ -21,7 +20,6 @@ export interface IGenerateSignatureRequestData {
 
 export interface ISendSignatureRequest {
     signers: Signer[];
-    doc: string;
     clientId: string;
     title: string;
     subject: string;
@@ -51,7 +49,7 @@ export const downloadDocument = async (requestId: string) => {
     };
 }
 
-export const generateSignatureRequestData = ({ signers, doc, clientId, title, subject, message, ccEmailAddresses, fileUrl, testMode }: IGenerateSignatureRequestData) => {
+export const generateSignatureRequestData = ({ signers, clientId, title, subject, message, ccEmailAddresses, fileUrl, testMode }: IGenerateSignatureRequestData) => {
     const signingOptions: HelloSignSDK.SubSigningOptions = {
         draw: true,
         type: true,
@@ -76,13 +74,12 @@ export const generateSignatureRequestData = ({ signers, doc, clientId, title, su
     };
 }
 
-export const sendSignatureRequest = async ({ signers, doc, clientId, title, subject, message, fileUrl, testMode}: ISendSignatureRequest) => {
+export const sendSignatureRequest = async ({ signers, clientId, title, subject, message, fileUrl, testMode}: ISendSignatureRequest) => {
     const api = new HelloSignSDK.SignatureRequestApi();
     api.username = process.env.HELLOSIGN_API_KEY || "undefined";
 
     const data: HelloSignSDK.SignatureRequestSendRequest = generateSignatureRequestData({
         signers,
-        doc,
         clientId,
         title,
         subject,
@@ -97,6 +94,7 @@ export const sendSignatureRequest = async ({ signers, doc, clientId, title, subj
         console.log("Exception when calling HelloSign API:");
         // @ts-ignore
         console.log(error.body);
+        return undefined;
     };
 }
 
@@ -134,7 +132,7 @@ export const createApp = async () => {
     }
 }
 
-export const uploadFile = async (encryptedData: string, filename: string, doc: string, clientId: string, recipientAddress: string, recipientName: string) => {
+export const uploadFile = async (encryptedData: string, filename: string, clientId: string, recipientAddress: string, recipientName: string) => {
     const s3 = new AWS.S3({
         endpoint: 'https://s3.filebase.com',
         region: 'us-east-1',
@@ -168,7 +166,6 @@ export const uploadFile = async (encryptedData: string, filename: string, doc: s
                     mail: recipientAddress,
                     name: recipientName
                 }],
-                doc,
                 clientId,
                 title: "Signature for " + filename,
                 subject: "Signature request for " + filename,
