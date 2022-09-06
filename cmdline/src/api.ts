@@ -1,5 +1,6 @@
 import * as HelloSignSDK from "hellosign-sdk";
 import AWS from 'aws-sdk';
+import logger from './logger';
 // import * from "hellosign-sdk/types";
 
 export type Signer = {
@@ -28,7 +29,7 @@ export interface ISendSignatureRequest {
     testMode: boolean;
 }
 
-export const getAccountInfo = async () => {
+export const getAccountInfo = async (): Promise<HelloSignSDK.AccountResponse | undefined> => {
     const api = new HelloSignSDK.AccountApi();
     api.username = process.env.HELLOSIGN_API_KEY || "undefined";
 
@@ -36,20 +37,20 @@ export const getAccountInfo = async () => {
     return response.body.account;
 }
 
-export const downloadDocument = async (requestId: string) => {
+export const downloadDocument = async (requestId: string): Promise<HelloSignSDK.SignatureRequestResponseSignatures[] | undefined> => {
     const api = new HelloSignSDK.SignatureRequestApi();
     api.username = process.env.HELLOSIGN_API_KEY || "undefined";
     try {
         const sigRequestResp = await api.signatureRequestGet(requestId);
         return sigRequestResp?.body?.signatureRequest?.signatures;
     } catch(error) {
-        console.log("Exception when calling HelloSign API:");
-        // @ts-ignore
-        console.log(error.body);
+        logger.error("Exception when calling HelloSign API:");
+        logger.error(error.body);
+        return Promise.reject("Unable to download the document related to the request ID " + requestId);
     };
 }
 
-export const generateSignatureRequestData = ({ signers, clientId, title, subject, message, ccEmailAddresses, fileUrl, testMode }: IGenerateSignatureRequestData) => {
+export const generateSignatureRequestData = ({ signers, clientId, title, subject, message, ccEmailAddresses, fileUrl, testMode }: IGenerateSignatureRequestData): HelloSignSDK.SignatureRequestSendRequest => {
     const signingOptions: HelloSignSDK.SubSigningOptions = {
         draw: true,
         type: true,
@@ -74,7 +75,7 @@ export const generateSignatureRequestData = ({ signers, clientId, title, subject
     };
 }
 
-export const sendSignatureRequest = async ({ signers, clientId, title, subject, message, fileUrl, testMode}: ISendSignatureRequest) => {
+export const sendSignatureRequest = async ({ signers, clientId, title, subject, message, fileUrl, testMode}: ISendSignatureRequest): Promise<HelloSignSDK.SignatureRequestGetResponse> => {
     const api = new HelloSignSDK.SignatureRequestApi();
     api.username = process.env.HELLOSIGN_API_KEY || "undefined";
 
@@ -91,19 +92,23 @@ export const sendSignatureRequest = async ({ signers, clientId, title, subject, 
         const response = await api.signatureRequestSend(data);
         return response.body;
     } catch(error) {
-        console.log("Exception when calling HelloSign API:");
-        // @ts-ignore
-        console.log(error.body);
-        return undefined;
+        logger.error("Exception when calling HelloSign API:");
+        logger.error(error.body);
+        return Promise.reject("Unable to send the signature request.");
     };
 }
 
 
-export const createApp = async () => {
+interface ICreateApp {
+    name: string,
+    domains: string[]
+}
+
+export const createApp = async ({ name, domains }: ICreateApp): Promise<HelloSignSDK.ApiAppGetResponse> => {
     const api = new HelloSignSDK.ApiAppApi();
     api.username = process.env.HELLOSIGN_API_KEY || "undefined";
 
-    const oauth = {
+    const oauth: HelloSignSDK.SubOAuth = {
         callbackUrl: "https://example.com/oauth",
         scopes: [
             HelloSignSDK.SubOAuth.ScopesEnum.BasicAccountInfo,
@@ -111,28 +116,28 @@ export const createApp = async () => {
         ],
     };
 
-    const whiteLabelingOptions = {
+    const whiteLabelingOptions: HelloSignSDK.SubWhiteLabelingOptions = {
         primaryButtonColor: "#00b3e6",
         primaryButtonTextColor: "#ffffff",
     };
 
-    const data = {
-        name: "My Production App",
-        domains: ["example.com"],
+    const data: HelloSignSDK.ApiAppCreateRequest = {
+        name,
+        domains,
         oauth,
         whiteLabelingOptions,
     };
     try {
         const response = await api.apiAppCreate(data);
-        console.log(response.body);
+        return response.body;
     } catch(error) {
-        console.log("Exception when calling HelloSign API:");
-        // @ts-ignore
-        console.log(error.body);
+        logger.error("Exception when calling HelloSign API:");
+        logger.error(error.body);
+        return Promise.reject("Unable to create an app.");
     }
 }
 
-export const uploadFile = async (encryptedData: string, filename: string, clientId: string, recipientAddress: string, recipientName: string) => {
+export const uploadFile = async (encryptedData: string, filename: string, clientId: string, recipientAddress: string, recipientName: string): Promise<void> => {
     const s3 = new AWS.S3({
         endpoint: 'https://s3.filebase.com',
         region: 'us-east-1',
@@ -154,12 +159,12 @@ export const uploadFile = async (encryptedData: string, filename: string, client
         };
         const request = s3.putObject(params)
         request.on('httpHeaders', async (statusCode, headers) => {
-            console.log(statusCode, headers)
+            logger.debug(statusCode + " " + headers)
             const cid = (statusCode === 200) ? headers['x-amz-meta-cid'] : null
-            console.log(cid)
+            logger.debug(cid)
             if (cid === null) return;
             const fileBaseGatewayUrl = "https://ipfs.filebase.io/ipfs/" + cid
-            console.log(`URL: ${fileBaseGatewayUrl}`);
+            logger.info(`URL: ${fileBaseGatewayUrl}`);
 
             const request = await sendSignatureRequest({
                 signers: [{
@@ -174,17 +179,18 @@ export const uploadFile = async (encryptedData: string, filename: string, client
                 testMode: true
             });
             if (request === undefined || request.signatureRequest === undefined) {
-                console.log('Unable to request a signature...')
+                logger.error('Unable to request a signature...')
             } else {
-                console.log('Request id: ', request.signatureRequest.signatureRequestId)
-                console.log('Requester: ', request.signatureRequest.requesterEmailAddress)
-                console.log('Details url: ', request.signatureRequest.detailsUrl)
-                console.log('Signatures: ', request.signatureRequest.signatures)
-                console.log('Request done!')
+                logger.info('Request id: ', request.signatureRequest.signatureRequestId)
+                logger.info('Requester: ', request.signatureRequest.requesterEmailAddress)
+                logger.info('Details url: ', request.signatureRequest.detailsUrl)
+                logger.info('Signatures: ', request.signatureRequest.signatures)
+                logger.info('Request done!')
             }
         })
         await request.send()
     } catch (error) {
-        console.log(error)
+        logger.error(error)
+        Promise.reject("Error while creating a signature request.")
     }
 }

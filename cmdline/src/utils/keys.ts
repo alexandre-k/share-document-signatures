@@ -1,50 +1,66 @@
-import { WKD } from '@openpgp/wkd-client';
+import WKD from '@openpgp/wkd-client';
+import axios from 'axios';
 import fsPromises from 'fs/promises';
 import fs from 'fs';
 import * as openpgp from 'openpgp';
 import promptSync from 'prompt-sync';
-console.log('WKD > ', WKD)
+import logger from '../logger';
 
-export const getPublicKeys = async (filename: string) => {
-    return await openpgp.readKey({ armoredKey: await getArmoredFile(filename) });
+export const getPublicKeys = async (filename: string): Promise<openpgp.Key> => {
+    return openpgp.readKey({ armoredKey: await getArmoredFile(filename) });
 }
 
-export const getPrivateKey = async (filename: string) => {
+export const getPrivateKey = async (filename: string): Promise<openpgp.PrivateKey> => {
     const buf = fs.readFileSync(filename)
-    return await openpgp.readPrivateKey({ binaryKey: buf });
+    return openpgp.readPrivateKey({ binaryKey: buf });
 }
 
-export const encryptDataAndSign = async (data: Buffer, recipientAddress: string, publicKeyFile: string, wkdServer: string, privateKey: openpgp.PrivateKey) => {
-    const pubKeys = !!publicKeyFile ?
-        await getPublicKeys(publicKeyFile) :
-        await lookupEmailPubKey(recipientAddress, wkdServer)
-    const encrypted = await openpgp.encrypt({
+export const encryptDataAndSign = async (data: Buffer, recipientAddress: string, publicKeyFile: string, wkdServer: string, privateKey: openpgp.PrivateKey): Promise<string> => {
+
+    let pubKeys = null;
+    if (!!publicKeyFile) {
+        pubKeys = await getPublicKeys(publicKeyFile);
+    } else {
+        pubKeys = await lookupEmailPubKey(recipientAddress, wkdServer);
+    }
+    return openpgp.encrypt({
         message: await openpgp.createMessage({ binary: data }),
         encryptionKeys: pubKeys,
         signingKeys: privateKey
     });
-    return encrypted
 }
 
-export const lookupEmailPubKey = async (email: string, server: string) => {
-    console.log('NOT YET IMPLEMENTED: use server ', server)
-    const wkd = new WKD();
-    const publicKeyBytes = await wkd.lookup({
-        email
-    });
-    return await openpgp.readKey({
-        binaryKey: publicKeyBytes
-    });
+export const lookupEmailPubKey = async (email: string, server: string): Promise<openpgp.Key> => {
+    try {
+        if (server) {
+            const apiUrl = 'https://' + server + '/vks/v1/by-email/' + email;
+            logger.debug('API call: ' + apiUrl)
+            const response = await axios.get(apiUrl);
+            return openpgp.readKey({
+                armoredKey: response.data
+            });
+        } else {
+            const client = new WKD();
+            const publicKeyBytes = await client.lookup({
+                email
+            });
+            return openpgp.readKey({
+                binaryKey: publicKeyBytes
+            });
+        }
+    } catch (error) {
+        logger.error(error);
+        return Promise.reject('Sorry, the lookup for "' + email + '" failed...');
+    }
 }
 
-export const getDecryptedPrivateKey = async (privateKeyFile: string) => {
+export const getDecryptedPrivateKey = async (privateKeyFile: string): Promise<openpgp.PrivateKey> => {
     const pkey = await getPrivateKey(privateKeyFile)
     if (!pkey.isDecrypted()) {
-        // @ts-ignore
         const prompt = promptSync({ hidden: true, echo: '*' });
-        console.log("Enter the passphrase to decrypt your private key:");
+        logger.info("Enter the passphrase to decrypt your private key:");
         const passphrase = prompt({ echo: '*'});
-        return await openpgp.decryptKey({
+        return openpgp.decryptKey({
             privateKey: pkey,
             passphrase
         });
@@ -53,18 +69,15 @@ export const getDecryptedPrivateKey = async (privateKeyFile: string) => {
     }
 }
 
-export const getArmoredFile = async (filename: string) => {
-    return await fsPromises.readFile(filename, 'utf8');
+export const getArmoredFile = async (filename: string): Promise<string> => {
+    return fsPromises.readFile(filename, 'utf8');
 }
 
-export const formatData = async (filename: string, recipientAddress: string, publicKey: string, privateKeyFile: string, server: string) => {
+export const formatData = async (filename: string, recipientAddress: string, publicKey: string, privateKeyFile: string, server: string): Promise<string> => {
     const data = await fsPromises.readFile(filename)
 
     const privateKeyDecrypted = await getDecryptedPrivateKey(privateKeyFile)
 
-    const encryptedData = await encryptDataAndSign(
+    return encryptDataAndSign(
         data, recipientAddress, publicKey, server, privateKeyDecrypted)
-    console.log('Encrypted data:\n', encryptedData)
-
-    return encryptedData
 }

@@ -12,7 +12,6 @@
     "build:watch": "tsc -w -p tsconfig.json",
     "build:release": "npm run clean && tsc -p tsconfig.release.json"
   },
-  "type": "module",
   "types": "index.d.ts",
   "author": "",
   "license": "ISC",
@@ -20,9 +19,12 @@
     "@openpgp/web-stream-tools": "^0.0.11",
     "@openpgp/wkd-client": "^0.0.3",
     "aws-sdk": "^2.1209.0",
+    "dotenv": "^16.0.2",
     "hellosign-sdk": "file:./../app/hellosign-sdk-6.0.0.tgz",
     "nodemailer": "^6.7.8",
     "openpgp": "^5.5.0",
+    "pino": "^8.5.0",
+    "pino-pretty": "^9.1.0",
     "prompt-sync": "^4.2.0",
     "qr-image": "^3.2.0",
     "yargs": "^17.5.1"
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
     "@types/jest": "^29.0.0",
+    "@types/pino": "^7.0.5",
     "@types/prompt-sync": "^4.1.1",
     "@types/yargs": "^17.0.12",
     "@typescript-eslint/eslint-plugin": "^5.36.2",

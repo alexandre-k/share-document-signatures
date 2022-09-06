@@ -1,14 +1,31 @@
 #!/usr/bin/env node
 import yargs from 'yargs';
+import * as dotenv from "dotenv";
 import { formatData, lookupEmailPubKey } from "./utils/keys";
 import { createApp, downloadDocument, getAccountInfo, sendSignatureRequest, uploadFile } from './api';
+import logger from './logger';
 
-const testSignatureRequestId = "709f58c1b9b3e4dbfdce4e6a8aace66b5dd74a3f"
+// const testSignatureRequestId = "709f58c1b9b3e4dbfdce4e6a8aace66b5dd74a3f"
 const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
 
-(async () => {
+dotenv.config();
+
+(async (): Promise<void> => {
     const argv = await yargs
-      .command('create-app', "Create app to get client ID")
+          .command('create-app', "Create an app to get a client ID from HelloSign", {
+            name: {
+                description: "Name of the app to create",
+                alias: "name",
+                type: "string",
+                default: "My Production App"
+            },
+            domains: {
+                description: "A domain to create the app for",
+                alias: "domain",
+                type: "string",
+                default: ["example.com"]
+            }
+          })
       .command('upload', "Upload a document to sign", {
           recipientAddress: {
               description:
@@ -63,13 +80,12 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
               default: "keys.openpgp.org"
           }
       })
-      .command('get-account', "Get account used for signatures")
+      .command('account', "Get account used for signatures")
       .command('document', 'Get documents', {
           requestId: {
               description: "Request id of document to sign",
               alias: 'rid',
-              type: 'string',
-              default: testSignatureRequestId
+              type: 'string'
           }
       })
       .command('send', 'Send request', {
@@ -106,8 +122,12 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
 
     switch (cmd) {
       case 'create-app': {
-          const app = await createApp()
-          console.log(app)
+          const app = await createApp({
+              name: argv.name as string,
+              domains: argv.domain as string[]
+          });
+          if (app)
+              logger.info(app);
           break;
       }
       case "upload": {
@@ -118,8 +138,8 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
               argv.privateKey as string,
               argv.server as string);
 
+          logger.info('Encrypted data:\n', encryptedData)
           await uploadFile(
-              // @ts-ignore
               encryptedData,
               argv.name as string,
               testClientId,
@@ -129,28 +149,32 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
 
       }
       case 'lookup': {
-        console.log('Lookup email: ', argv.recipientAddress);
+        logger.info('Lookup email: ', argv.recipientAddress);
         const publicKeys = await lookupEmailPubKey(argv.recipientAddress as string, argv.server as string)
-          console.log("Public keys: ", publicKeys)
+          if (publicKeys)
+              logger.info(publicKeys)
         break;
       }
       case 'account': {
         const accountInfo = await getAccountInfo()
-        console.log(accountInfo)
+        logger.info(accountInfo)
         break;
       }
       case 'document': {
-          if (!argv.requestId) console.log('Needs a request id to fetch signatures related to a document.')
-        const signatures = await downloadDocument(argv.requestId as string)
-          if (!!signatures)
-              signatures.map(sig => {
-                  console.log(
-                      "\n\n=============",
-                      "\nSignature ID: ", sig.signatureId,
-                      "\nSigner Email address: ", sig.signerEmailAddress,
-                      "\nSigner name: ", sig.signerName,
-                      "\n=============")
-              })
+          if (!argv.requestId) {
+              logger.error('Needs a request id to fetch signatures related to a document.')
+          } else {
+            const signatures = await downloadDocument(argv.requestId as string)
+            if (signatures)
+                signatures.map(sig => {
+                    logger.info(
+                        "\n\n=============",
+                        "\nSignature ID: ", sig.signatureId,
+                        "\nSigner Email address: ", sig.signerEmailAddress,
+                        "\nSigner name: ", sig.signerName,
+                        "\n=============")
+                })
+          }
         break;
       }
       case 'send': {
@@ -167,15 +191,19 @@ const testClientId = "0839d8330c3e55c4ccd10f52d62376ce";
               testMode: true
           });
           if (request !== undefined && request.signatureRequest !== undefined) {
-            console.log('Request id: ', request.signatureRequest.signatureRequestId)
-            console.log('Requester: ', request.signatureRequest.requesterEmailAddress)
-            console.log('Details url: ', request.signatureRequest.detailsUrl)
-            console.log('Signatures: ', request.signatureRequest.signatures)
-            console.log('Request done!')
+            logger.info('Request id: ', request.signatureRequest.signatureRequestId)
+            logger.info('Requester: ', request.signatureRequest.requesterEmailAddress)
+            logger.info('Details url: ', request.signatureRequest.detailsUrl)
+            logger.info('Signatures: ', request.signatureRequest.signatures)
+            logger.info('Request done!')
           } else {
-              console.log('Unable to send a signature request...')
+              logger.error('Unable to send a signature request...')
           }
         break;
+      }
+      default: {
+          yargs.showHelp();
+          break;
       }
     }
 })();
