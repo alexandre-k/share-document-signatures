@@ -118,7 +118,7 @@ dotenv.config();
       .help()
       .alias('help', 'h').argv;
 
-    const [ cmd, _ ] = argv._;
+    const [ cmd, ] = argv._;
 
     switch (cmd) {
       case 'create-app': {

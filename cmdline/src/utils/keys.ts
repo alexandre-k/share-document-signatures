@@ -1,4 +1,3 @@
-import WKD from '@openpgp/wkd-client';
 import axios from 'axios';
 import fsPromises from 'fs/promises';
 import fs from 'fs';
@@ -18,7 +17,7 @@ export const getPrivateKey = async (filename: string): Promise<openpgp.PrivateKe
 export const encryptDataAndSign = async (data: Buffer, recipientAddress: string, publicKeyFile: string, wkdServer: string, privateKey: openpgp.PrivateKey): Promise<string> => {
 
     let pubKeys = null;
-    if (!!publicKeyFile) {
+    if (publicKeyFile) {
         pubKeys = await getPublicKeys(publicKeyFile);
     } else {
         pubKeys = await lookupEmailPubKey(recipientAddress, wkdServer);
@@ -32,22 +31,12 @@ export const encryptDataAndSign = async (data: Buffer, recipientAddress: string,
 
 export const lookupEmailPubKey = async (email: string, server: string): Promise<openpgp.Key> => {
     try {
-        if (server) {
-            const apiUrl = 'https://' + server + '/vks/v1/by-email/' + email;
-            logger.debug('API call: ' + apiUrl)
-            const response = await axios.get(apiUrl);
-            return openpgp.readKey({
-                armoredKey: response.data
-            });
-        } else {
-            const client = new WKD();
-            const publicKeyBytes = await client.lookup({
-                email
-            });
-            return openpgp.readKey({
-                binaryKey: publicKeyBytes
-            });
-        }
+        const apiUrl = 'https://' + server + '/vks/v1/by-email/' + email;
+        logger.debug('API call to: ' + apiUrl)
+        const response = await axios.get(apiUrl);
+        return openpgp.readKey({
+            armoredKey: response.data
+        });
     } catch (error) {
         logger.error(error);
         return Promise.reject('Sorry, the lookup for "' + email + '" failed...');
@@ -57,9 +46,11 @@ export const lookupEmailPubKey = async (email: string, server: string): Promise<
 export const getDecryptedPrivateKey = async (privateKeyFile: string): Promise<openpgp.PrivateKey> => {
     const pkey = await getPrivateKey(privateKeyFile)
     if (!pkey.isDecrypted()) {
-        const prompt = promptSync({ hidden: true, echo: '*' });
-        logger.info("Enter the passphrase to decrypt your private key:");
-        const passphrase = prompt({ echo: '*'});
+        const prompt = promptSync();
+        const passphrase = prompt({
+            echo: '*',
+            ask: "Enter the passphrase to decrypt your private key:"
+        });
         return openpgp.decryptKey({
             privateKey: pkey,
             passphrase

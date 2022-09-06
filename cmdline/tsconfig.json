@@ -9,7 +9,6 @@
     "rootDir": ".",
     "moduleResolution": "node",
     "sourceMap": true,
-    "declaration": true,
     "outDir": "./build",
     "importHelpers": true,
     "allowSyntheticDefaultImports": true,

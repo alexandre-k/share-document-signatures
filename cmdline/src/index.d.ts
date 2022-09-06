@@ -1,30 +1,27 @@
-declare module 'HelloSignEncrypt';
+declare namespace Api {
+    export type Signer = {
+        name: string
+        mail: string
+    }
 
-export interface Signer {
-    name: string;
-    mail: string;
-}
+    export interface IGenerateSignatureRequestData {
+        signers: Signer[];
+        clientId: string;
+        title: string;
+        subject: string;
+        message: string;
+        ccEmailAddresses: string[];
+        fileUrl: string;
+        testMode: boolean;
+    }
 
-export interface IGenerateSendSignatureRequest {
-    signers: Signer[];
-    doc: string;
-    clientId: string;
-    title: string;
-    subject: string;
-    message: string;
-    ccEmailAddresses: string[];
-    fileUrl: string;
-    testMode: boolean;
-}
-
-export interface ISendSignatureRequest {
-    signers: Signer[];
-    doc: string;
-    clientId: string;
-    title: string;
-    subject: string;
-    message: string;
-    fileUrl: string;
-    willSend: boolean;
-    testMode: boolean;
+    export interface ISendSignatureRequest {
+        signers: Signer[];
+        clientId: string;
+        title: string;
+        subject: string;
+        message: string;
+        fileUrl: string;
+        testMode: boolean;
+    }
 }
