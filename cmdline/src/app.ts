@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import { formatData, lookupEmailPubKey } from './utils/keys';
 import {
   createApp,
+  listApp,
   downloadDocument,
   getAccountInfo,
   sendSignatureRequest,
@@ -20,22 +21,27 @@ dotenv.config();
 (async (): Promise<void> => {
   const argv = await yargs(hideBin(process.argv))
     .command(
-      'create-app',
-      'Create an app to get a client ID from HelloSign',
+      'app',
+      'List or create an app to get a client ID from HelloSign',
       (yargs) => {
         return yargs
           .positional('name', {
             description: 'Name of the app to create',
             alias: 'name',
             type: 'string',
-            default: 'My Production App',
+            default: 'My Production App'
           })
           .positional('domain', {
             description: 'A domain to create the app for',
             alias: 'domain',
             type: 'string',
-            default: ['example.com'],
-          });
+            default: ['example.com']
+          })
+        .option('create', {
+            description: 'Pass create to create an app',
+            type: 'boolean'
+            default: false
+        })
       },
     )
     .command('upload', 'Upload a document to sign', (yargs) => {
@@ -130,19 +136,27 @@ dotenv.config();
           default: testClientId,
         });
     })
+    .demandCommand()
     .help()
     .alias('help', 'h')
+    .wrap(72)
     .parse();
 
   const [cmd] = argv._;
 
   switch (cmd) {
-    case 'create-app': {
-      const app = await createApp({
-        name: argv.name,
-        domains: argv.domain,
-      });
-      if (app) logger.info(app);
+    case 'app': {
+        console.log('argv ', argv)
+        if (argv.create) {
+            const app = await createApp({
+                name: argv.name,
+                domains: argv.domain,
+            });
+            if (app) logger.info(app);
+        } else {
+            const app = await listApp()
+            if (app) logger.info(app);
+        }
       break;
     }
     case 'upload': {

@@ -138,6 +138,19 @@ export const createApp = async ({
   }
 };
 
+export const listApp = async (): HelloSignSDK.ApiAppListResponse => {
+    const api = new HelloSignSDK.ApiAppApi();
+    api.username = process.env.HELLOSIGN_API_KEY || 'undefined';
+    try {
+        const response = await api.apiAppList(1, 2);
+        return response.body;
+    } catch (error) {
+        logger.error('Exception when calling HelloSign API:');
+        logger.error(error.body);
+        return Promise.reject('Unable to list applications.');
+    }
+}
+
 export const uploadFile = async (
   encryptedData: string,
   filename: string,
