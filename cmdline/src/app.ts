@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 import * as dotenv from 'dotenv';
 import { formatData, lookupEmailPubKey } from './utils/keys';
 import {
@@ -17,145 +18,157 @@ const testClientId = '0839d8330c3e55c4ccd10f52d62376ce';
 dotenv.config();
 
 (async (): Promise<void> => {
-  const argv = await yargs
-    .command('create-app', 'Create an app to get a client ID from HelloSign', {
-      name: {
-        description: 'Name of the app to create',
-        alias: 'name',
-        type: 'string',
-        default: 'My Production App',
+  const argv = await yargs(hideBin(process.argv))
+    .command(
+      'create-app',
+      'Create an app to get a client ID from HelloSign',
+      (yargs) => {
+        return yargs
+          .positional('name', {
+            description: 'Name of the app to create',
+            alias: 'name',
+            type: 'string',
+            default: 'My Production App',
+          })
+          .positional('domain', {
+            description: 'A domain to create the app for',
+            alias: 'domain',
+            type: 'string',
+            default: ['example.com'],
+          });
       },
-      domains: {
-        description: 'A domain to create the app for',
-        alias: 'domain',
-        type: 'string',
-        default: ['example.com'],
-      },
+    )
+    .command('upload', 'Upload a document to sign', (yargs) => {
+      return yargs
+        .positional('recipientAddress', {
+          description:
+            'Mail address for the recipient of the signature request',
+          alias: 'raddr',
+          type: 'string',
+          default: 'john.doe@example.com',
+        })
+        .positional('recipientName', {
+          description: 'Name of the recipient of the signature request',
+          alias: 'rname',
+          type: 'string',
+          default: 'John Doe',
+        })
+        .positional('name', {
+          description: 'Name of the document',
+          alias: 'n',
+          type: 'string',
+          default: 'document.pdf',
+        })
+        .positional('publicKey', {
+          description: 'Public key of recipient',
+          alias: 'pub',
+          type: 'string',
+          default: './public.key',
+        })
+        .positional('privateKey', {
+          description: 'Your own Private key',
+          alias: 'priv',
+          type: 'string',
+          default: './private.key',
+        })
+        .positional('server', {
+          description: 'Default server used for lookup',
+          alias: 's',
+          type: 'string',
+          default: 'keys.openpgp.org',
+        });
     })
-    .command('upload', 'Upload a document to sign', {
-      recipientAddress: {
-        description: 'Mail address for the recipient of the signature request',
-        alias: 'raddr',
-        type: 'string',
-        default: 'john.doe@example.com',
-      },
-      recipientName: {
-        description: 'Name of the recipient of the signature request',
-        alias: 'rname',
-        type: 'string',
-        default: 'John Doe',
-      },
-      name: {
-        description: 'Name of the document',
-        alias: 'n',
-        type: 'string',
-        default: 'document.pdf',
-      },
-      publicKey: {
-        description: 'Public key of recipient',
-        alias: 'pub',
-        type: 'string',
-        default: './public.key',
-      },
-      privateKey: {
-        description: 'Your own Private key',
-        alias: 'priv',
-        type: 'string',
-        default: './private.key',
-      },
-      server: {
-        description: 'Default server used for lookup',
-        alias: 's',
-        type: 'string',
-        default: 'keys.openpgp.org',
-      },
-    })
-    .command('lookup', 'Email address used for signatures', {
-      recipientAddress: {
-        description: 'Mail address for the recipient of the signature request',
-        alias: 'raddr',
-        type: 'string',
-        default: 'john.doe@example.com',
-      },
-      server: {
-        description: 'Default server used for lookup',
-        alias: 's',
-        type: 'string',
-        default: 'keys.openpgp.org',
-      },
+    .command('lookup', 'Email address used for signatures', (yargs) => {
+      return yargs
+        .positional('recipientAddress', {
+          description:
+            'Mail address for the recipient of the signature request',
+          alias: 'raddr',
+          type: 'string',
+          default: 'john.doe@example.com',
+        })
+        .positional('server', {
+          description: 'Default server used for lookup',
+          alias: 's',
+          type: 'string',
+          default: 'keys.openpgp.org',
+        });
     })
     .command('account', 'Get account used for signatures')
-    .command('document', 'Get documents', {
-      requestId: {
+    .command('document', 'Get documents', (yargs) => {
+      return yargs.positional('requestId', {
         description: 'Request id of document to sign',
         alias: 'rid',
         type: 'string',
-      },
+      });
     })
-    .command('send', 'Send request', {
-      document: {
-        description: 'Document to sign',
-        alias: 'doc',
-        type: 'string',
-        default: 'document.pdf',
-      },
-      recipientAddress: {
-        description: 'Mail address for the recipient of the signature request',
-        alias: 'raddr',
-        type: 'string',
-        default: 'john.doe@example.com',
-      },
-      recipientName: {
-        description: 'Name of the recipient of the signature request',
-        alias: 'rname',
-        type: 'string',
-        default: 'John Doe',
-      },
-      clientId: {
-        description: 'App id generated',
-        alias: 'cid',
-        type: 'string',
-        default: testClientId,
-      },
+    .command('send', 'Send request', (yargs) => {
+      return yargs
+        .positional('document', {
+          description: 'Document to sign',
+          alias: 'doc',
+          type: 'string',
+          default: 'document.pdf',
+        })
+        .positional('recipientAddress', {
+          description:
+            'Mail address for the recipient of the signature request',
+          alias: 'raddr',
+          type: 'string',
+          default: 'john.doe@example.com',
+        })
+        .positional('recipientName', {
+          description: 'Name of the recipient of the signature request',
+          alias: 'rname',
+          type: 'string',
+          default: 'John Doe',
+        })
+        .positional('clientId', {
+          description: 'App id generated',
+          alias: 'cid',
+          type: 'string',
+          default: testClientId,
+        });
     })
     .help()
-    .alias('help', 'h').argv;
+    .alias('help', 'h')
+    .parse();
 
   const [cmd] = argv._;
 
   switch (cmd) {
     case 'create-app': {
       const app = await createApp({
-        name: argv.name as string,
-        domains: argv.domain as string[],
+        name: argv.name,
+        domains: argv.domain,
       });
       if (app) logger.info(app);
       break;
     }
     case 'upload': {
       const encryptedData = await formatData(
-        argv.name as string,
-        argv.recipientAddress as string,
-        argv.publicKey as string,
-        argv.privateKey as string,
-        argv.server as string,
+        argv.name,
+        argv.recipientAddress,
+        argv.publicKey,
+        argv.privateKey,
+        argv.server,
       );
 
       logger.info('Encrypted data:\n', encryptedData);
       await uploadFile(
         encryptedData,
-        argv.name as string,
+        argv.name,
         testClientId,
-        argv.recipientAddress as string,
-        argv.recipientName as string,
+        argv.recipientAddress,
+        argv.recipientName,
       );
       break;
     }
     case 'lookup': {
       logger.info('Lookup email: ', argv.recipientAddress);
       const publicKeys = await lookupEmailPubKey(
-        argv.recipientAddress as string,
-        argv.server as string,
+        argv.recipientAddress,
+        argv.server
       );
       if (publicKeys) logger.info(publicKeys);
       break;
@@ -171,7 +184,7 @@ dotenv.config();
           'Needs a request id to fetch signatures related to a document.',
         );
       } else {
-        const signatures = await downloadDocument(argv.requestId as string);
+        const signatures = await downloadDocument(argv.requestId);
         if (signatures)
           signatures.map((sig) => {
             logger.info(
@@ -192,8 +205,8 @@ dotenv.config();
       const request = await sendSignatureRequest({
         signers: [
           {
-            mail: argv.recipientAddress as string,
-            name: argv.recipientName as string,
+            mail: argv.recipientAddress,
+            name: argv.recipientName,
           },
         ],
         clientId: testClientId,
