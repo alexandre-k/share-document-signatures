@@ -1,0 +1,9 @@
+doctype html
+html(lang="en")
+  head
+    title= pageTitle
+  body
+    h1 #{filename}
+    button(type='button' onclick='navigator.clipboard.writeText(document.querySelector("#pgpMessage").innerText)') Copy to clipboard
+    <br/><br/>
+    pre(id='pgpMessage') !{encryptedData}

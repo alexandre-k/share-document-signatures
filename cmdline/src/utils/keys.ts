@@ -18,16 +18,18 @@ export const getPrivateKey = async (
 
 export const encryptDataAndSign = async (
   data: Buffer,
-  recipientAddress: string,
-  publicKeyFile: string,
+  email: string,
+  publicKeyFile: string | null,
   wkdServer: string,
   privateKey: openpgp.PrivateKey,
 ): Promise<string> => {
   let pubKeys = null;
-  if (publicKeyFile) {
+  if (email && !publicKeyFile) {
+    pubKeys = await lookupEmailPubKey(email, wkdServer);
+  } else if (publicKeyFile) {
     pubKeys = await getPublicKeys(publicKeyFile);
   } else {
-    pubKeys = await lookupEmailPubKey(recipientAddress, wkdServer);
+    throw new Error('No public key found!');
   }
   return openpgp.encrypt({
     message: await openpgp.createMessage({ binary: data }),
@@ -48,9 +50,13 @@ export const lookupEmailPubKey = async (
       armoredKey: response.data,
     });
   } catch (error) {
-    logger.error(error);
+    logger.error(error.message);
     return Promise.reject('Sorry, the lookup for "' + email + '" failed...');
   }
+};
+
+export const toArmorFormat = (publicKey: openpgp.Key): string => {
+  return publicKey.toPublic().armor();
 };
 
 export const getDecryptedPrivateKey = async (
@@ -78,8 +84,8 @@ export const getArmoredFile = async (filename: string): Promise<string> => {
 
 export const formatData = async (
   filename: string,
-  recipientAddress: string,
-  publicKey: string,
+  email: string,
+  publicKey: string | null,
   privateKeyFile: string,
   server: string,
 ): Promise<string> => {
@@ -89,7 +95,7 @@ export const formatData = async (
 
   return encryptDataAndSign(
     data,
-    recipientAddress,
+    email,
     publicKey,
     server,
     privateKeyDecrypted,

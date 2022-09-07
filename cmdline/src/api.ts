@@ -1,4 +1,5 @@
 import * as HelloSignSDK from 'hellosign-sdk';
+import pug from 'pug';
 import AWS from 'aws-sdk';
 import logger from './logger';
 // import * from "hellosign-sdk/types";
@@ -138,18 +139,18 @@ export const createApp = async ({
   }
 };
 
-export const listApp = async (): HelloSignSDK.ApiAppListResponse => {
-    const api = new HelloSignSDK.ApiAppApi();
-    api.username = process.env.HELLOSIGN_API_KEY || 'undefined';
-    try {
-        const response = await api.apiAppList(1, 2);
-        return response.body;
-    } catch (error) {
-        logger.error('Exception when calling HelloSign API:');
-        logger.error(error.body);
-        return Promise.reject('Unable to list applications.');
-    }
-}
+export const listApp = async (): Promise<HelloSignSDK.ApiAppListResponse> => {
+  const api = new HelloSignSDK.ApiAppApi();
+  api.username = process.env.HELLOSIGN_API_KEY || 'undefined';
+  try {
+    const response = await api.apiAppList(1, 2);
+    return response.body;
+  } catch (error) {
+    logger.error('Exception when calling HelloSign API:');
+    logger.error(error.body);
+    return Promise.reject('Unable to list applications.');
+  }
+};
 
 export const uploadFile = async (
   encryptedData: string,
@@ -166,21 +167,15 @@ export const uploadFile = async (
     secretAccessKey: process.env.FILEBASE_SECRET_ACCESS_KEY,
   });
 
-  // const textFileName = 'encrypted_data.txt'
-  const data =
-    '==================' +
-    filename +
-    '==================\n\n' +
-    encryptedData +
-    '\n\n========================================================';
-  // await createTextFile(data, textFileName)
-  // const pdfContent = fs.readFileSync(pdfName)
+  const data = pug.compileFile('./templates/shared_document.pug');
+
+  console.log(data({ filename, encryptedData }));
 
   try {
     const params = {
       Bucket: 'hellosign',
       Key: filename,
-      Body: data,
+        Body: data({ filename, encryptedData }),
     };
     const request = s3.putObject(params);
     request.on('httpHeaders', async (statusCode, headers) => {
@@ -189,7 +184,9 @@ export const uploadFile = async (
       logger.debug(cid);
       if (cid === null) return;
       const fileBaseGatewayUrl = 'https://ipfs.filebase.io/ipfs/' + cid;
-      logger.info(`URL: ${fileBaseGatewayUrl}`);
+      logger.info(
+        `URL where the encrypted data is hosted: ${fileBaseGatewayUrl}`,
+      );
 
       const request = await sendSignatureRequest({
         signers: [
@@ -215,21 +212,20 @@ export const uploadFile = async (
         logger.error('Unable to request a signature...');
       } else {
         logger.info(
-          'Request id: ',
-          request.signatureRequest.signatureRequestId,
+          'Request id: ' + request.signatureRequest.signatureRequestId,
         );
         logger.info(
-          'Requester: ',
-          request.signatureRequest.requesterEmailAddress,
+          'Requester: ' + request.signatureRequest.requesterEmailAddress,
         );
-        logger.info('Details url: ', request.signatureRequest.detailsUrl);
-        logger.info('Signatures: ', request.signatureRequest.signatures);
+        logger.info('Details url: ' + request.signatureRequest.detailsUrl);
+        logger.info('Signatures: ' + request.signatureRequest.signatures);
         logger.info('Request done!');
       }
     });
     await request.send();
   } catch (error) {
-    logger.error(error);
+      console.log(error)
+    logger.error(error.message);
     Promise.reject('Error while creating a signature request.');
   }
 };
