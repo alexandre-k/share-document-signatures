@@ -4,17 +4,16 @@ App for hackathon at https://hellosignhackathon2022.devpost.com/
 
 ## Getting Started
 
-First, run the development server:
+First, go the the command app directory and download modules:
 
 ```bash
-npm run dev
-# or
-yarn dev
+cd cmdline
+yarn
 ```
-## Install packages
 
-Refer to the page of hellosign to install the related package, based on the branch openapi.
+Then build the application and run it:
 
 ```
-https://github.com/HelloFax/hellosign-nodejs-sdk/tree/openapi#from-repo
+yarn build
+./hellosign
 ```
